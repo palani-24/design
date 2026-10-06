@@ -22,6 +22,7 @@ export const RightGradingPanel: React.FC = () => {
     isGrading,
     lastGradingResult,
     gradingNotification,
+    activeGradingStep,
   } = useCADStore();
 
   const [activeTab, setActiveTab] = useState<'grading' | 'matrix'>('grading');
@@ -163,35 +164,64 @@ export const RightGradingPanel: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Neck</div>
-              <div className="text-blue-600 font-bold font-mono">✓ Sync</div>
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'neck'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'neck' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Neck</div>
+              <div className={activeGradingStep === 'neck' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>✓ Sync</div>
             </div>
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Shoulder</div>
-              <div className="text-blue-600 font-bold font-mono">✓ Sync</div>
+
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'shoulder'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'shoulder' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Shoulder</div>
+              <div className={activeGradingStep === 'shoulder' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>✓ Sync</div>
             </div>
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Bust</div>
-              <div className="text-blue-600 font-bold font-mono">
+
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'bust'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'bust' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Bust</div>
+              <div className={activeGradingStep === 'bust' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>
                 {bustDeltaCm >= 0 ? `+${bustDeltaCm.toFixed(1)}cm` : `${bustDeltaCm.toFixed(1)}cm`}
               </div>
             </div>
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Waist</div>
-              <div className="text-blue-600 font-bold font-mono">
+
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'waist'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'waist' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Waist</div>
+              <div className={activeGradingStep === 'waist' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>
                 {waistDeltaCm >= 0 ? `+${waistDeltaCm.toFixed(1)}cm` : `${waistDeltaCm.toFixed(1)}cm`}
               </div>
             </div>
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Hip</div>
-              <div className="text-blue-600 font-bold font-mono">
+
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'hip'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'hip' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Hip</div>
+              <div className={activeGradingStep === 'hip' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>
                 {hipDeltaCm >= 0 ? `+${hipDeltaCm.toFixed(1)}cm` : `${hipDeltaCm.toFixed(1)}cm`}
               </div>
             </div>
-            <div className="p-1.5 bg-white border border-slate-200 rounded shadow-2xs">
-              <div className="text-slate-500 font-semibold">Hem/Length</div>
-              <div className="text-blue-600 font-bold font-mono">
+
+            <div className={`p-1.5 rounded transition-all ${
+              activeGradingStep === 'hem'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105'
+                : 'bg-white border border-slate-200 shadow-2xs'
+            }`}>
+              <div className={activeGradingStep === 'hem' ? 'text-blue-100 font-semibold' : 'text-slate-500 font-semibold'}>Hem/Length</div>
+              <div className={activeGradingStep === 'hem' ? 'text-white font-bold font-mono' : 'text-blue-600 font-bold font-mono'}>
                 {lengthDeltaCm >= 0 ? `+${lengthDeltaCm.toFixed(1)}cm` : `${lengthDeltaCm.toFixed(1)}cm`}
               </div>
             </div>

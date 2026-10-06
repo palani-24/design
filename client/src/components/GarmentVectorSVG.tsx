@@ -90,7 +90,7 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
               fontFamily="monospace"
               fontWeight="bold"
             >
-              ◆ ENTIRE GARMENT: BASIC T-SHIRT (ONE OBJECT GRADING BOUNDS)
+              ◆ ENTIRE GARMENT: {garment.name.toUpperCase()} (ONE OBJECT GRADING BOUNDS)
             </text>
           </g>
 

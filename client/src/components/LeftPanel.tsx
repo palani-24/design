@@ -20,17 +20,18 @@ export const LeftPanel: React.FC = () => {
     setSelectedComponent,
     selectEntireGarment,
     setActiveModal,
+    loadGarmentTemplate,
   } = useCADStore();
 
   const [tshirtsExpanded, setTshirtsExpanded] = useState(true);
   const [shirtsExpanded, setShirtsExpanded] = useState(false);
   const [trousersExpanded, setTrousersExpanded] = useState(false);
 
-  const frontComp = garment.components.find((c) => c.id === 'front');
-  const backComp = garment.components.find((c) => c.id === 'back');
-  const sleeveComp = garment.components.find((c) => c.id === 'sleeve');
-
   const isEntireSelected = selectedComponentId === 'entire' || selectedComponentId === null;
+  const isBasicActive = garment.category === 't-shirt';
+  const isPoloActive = garment.category === 'polo';
+  const isShirtActive = garment.category === 'shirt';
+  const isTrouserActive = garment.category === 'trouser';
 
   return (
     <aside className="w-72 bg-white border-r border-slate-200 flex flex-col h-full select-none shadow-sm">
@@ -62,31 +63,49 @@ export const LeftPanel: React.FC = () => {
               {tshirtsExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
               <span>T-Shirts (2)</span>
             </div>
-            <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded font-medium">Active Dept</span>
+            <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded font-medium">
+              {(isBasicActive || isPoloActive) ? 'Active Dept' : '2 styles'}
+            </span>
           </button>
 
           {tshirtsExpanded && (
             <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
               <div
-                className="flex items-center justify-between px-2 py-1.5 bg-blue-50 border border-blue-200/80 rounded cursor-pointer text-blue-900 font-medium"
-                onClick={selectEntireGarment}
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isBasicActive
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('basic-tshirt')}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-600" />
+                  <span className={`w-2 h-2 rounded-full ${isBasicActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
                   <span>Basic T-Shirt</span>
                 </div>
-                <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-mono font-bold">ACTIVE</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isBasicActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isBasicActive ? 'ACTIVE' : 'v1.4'}
+                </span>
               </div>
 
               <div
-                className="flex items-center justify-between px-2 py-1.5 text-slate-600 hover:bg-slate-100 rounded cursor-pointer transition-colors"
-                onClick={() => alert('Polo T-Shirt template is available. Select Basic T-Shirt for active grading.')}
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isPoloActive
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('polo')}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-slate-300" />
+                  <span className={`w-2 h-2 rounded-full ${isPoloActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
                   <span>Polo T-Shirt</span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono">v2.1</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isPoloActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isPoloActive ? 'ACTIVE' : 'v2.1'}
+                </span>
               </div>
             </div>
           )}
@@ -102,11 +121,28 @@ export const LeftPanel: React.FC = () => {
               {shirtsExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
               <span>Shirts (1)</span>
             </div>
-            <span className="text-[10px] text-slate-400">Base</span>
+            <span className="text-[10px] text-slate-400">{isShirtActive ? 'Active' : 'Base'}</span>
           </button>
           {shirtsExpanded && (
-            <div className="ml-4 pl-2 border-l border-slate-200 py-1 text-slate-500 text-[11px]">
-              Fitted Dress Shirt (v1.0)
+            <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isShirtActive
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('shirt')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isShirtActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span>Casual Button-Up</span>
+                </div>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isShirtActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isShirtActive ? 'ACTIVE' : 'v1.0'}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -121,11 +157,28 @@ export const LeftPanel: React.FC = () => {
               {trousersExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
               <span>Trousers (1)</span>
             </div>
-            <span className="text-[10px] text-slate-400">Base</span>
+            <span className="text-[10px] text-slate-400">{isTrouserActive ? 'Active' : 'Base'}</span>
           </button>
           {trousersExpanded && (
-            <div className="ml-4 pl-2 border-l border-slate-200 py-1 text-slate-500 text-[11px]">
-              Tailored Trousers (v1.0)
+            <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isTrouserActive
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('trouser')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isTrouserActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span>Chino Trouser</span>
+                </div>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isTrouserActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isTrouserActive ? 'ACTIVE' : 'v1.0'}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -196,63 +249,38 @@ export const LeftPanel: React.FC = () => {
             onClick={selectEntireGarment}
           >
             <Component className="w-3.5 h-3.5 text-blue-500" />
-            <span>Entire T-Shirt (Root Object)</span>
+            <span>Entire {garment.name} (Root Object)</span>
           </div>
 
           <div className="ml-3 pl-3 border-l-2 border-slate-200 space-y-1.5 mt-1">
-            {/* Front Component */}
-            <div
-              onClick={() => setSelectedComponent('front')}
-              className={`p-2 rounded border cursor-pointer transition-colors ${
-                selectedComponentId === 'front'
-                  ? 'bg-blue-50 border-blue-400 text-blue-900'
-                  : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs">Front Component</span>
-                <span className="text-[9px] text-slate-400 font-mono">1/4 Fold</span>
-              </div>
-              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                1/2 Chest: {frontComp?.measurements.halfChest?.toFixed(1) || '48.0'}cm • Cut 1
-              </div>
-            </div>
-
-            {/* Back Component */}
-            <div
-              onClick={() => setSelectedComponent('back')}
-              className={`p-2 rounded border cursor-pointer transition-colors ${
-                selectedComponentId === 'back'
-                  ? 'bg-blue-50 border-blue-400 text-blue-900'
-                  : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs">Back Component</span>
-                <span className="text-[9px] text-slate-400 font-mono">1/4 Fold</span>
-              </div>
-              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                1/2 Chest: {backComp?.measurements.halfChest?.toFixed(1) || '48.0'}cm • Cut 1
-              </div>
-            </div>
-
-            {/* Sleeve Component */}
-            <div
-              onClick={() => setSelectedComponent('sleeve')}
-              className={`p-2 rounded border cursor-pointer transition-colors ${
-                selectedComponentId === 'sleeve'
-                  ? 'bg-blue-50 border-blue-400 text-blue-900'
-                  : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100 text-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs">Sleeve (Pair)</span>
-                <span className="text-[9px] text-slate-400 font-mono">Pair</span>
-              </div>
-              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                Cap Scye {sleeveComp?.measurements.sleeveCapLength?.toFixed(1) || '46.2'}cm • Length {sleeveComp?.measurements.sleeveLength?.toFixed(1) || '20.5'}cm
-              </div>
-            </div>
+            {garment.components.map((comp) => {
+              const isSelected = selectedComponentId === comp.id;
+              return (
+                <div
+                  key={comp.id}
+                  onClick={() => setSelectedComponent(comp.id)}
+                  className={`p-2 rounded border cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-2xs'
+                      : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-xs">{comp.name}</span>
+                    <span className="text-[9px] text-slate-400 font-mono">
+                      {comp.id === 'collar' ? 'Collar' : comp.id === 'sleeve' ? 'Pair' : '1/4 Fold'}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                    {comp.id === 'sleeve'
+                      ? `Cap Scye ${comp.measurements.sleeveCapLength?.toFixed(1) || '46.2'}cm • Length ${comp.measurements.sleeveLength?.toFixed(1) || '20.5'}cm`
+                      : comp.id === 'collar'
+                      ? 'Flat Knit Rib • 40cm Neck'
+                      : `1/2 Chest: ${comp.measurements.halfChest?.toFixed(1) || '48.0'}cm • Cut 1`}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

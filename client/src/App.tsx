@@ -10,6 +10,9 @@ import { ExportSvgModal } from './components/modals/ExportSvgModal';
 import { JsonInspectorModal } from './components/modals/JsonInspectorModal';
 import { GradeTablesModal } from './components/modals/GradeTablesModal';
 import { DatabaseConnectModal } from './components/modals/DatabaseConnectModal';
+import { NestingModal } from './components/modals/NestingModal';
+import { TechPackModal } from './components/modals/TechPackModal';
+import { LibraryModal } from './components/modals/LibraryModal';
 import { useCADStore } from './store/useCADStore';
 
 export const App: React.FC = () => {
@@ -82,6 +85,9 @@ export const App: React.FC = () => {
       <JsonInspectorModal />
       <GradeTablesModal />
       <DatabaseConnectModal />
+      <NestingModal />
+      <TechPackModal />
+      <LibraryModal />
     </div>
   );
 };

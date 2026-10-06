@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Scissors,
   ClipboardList,
+  BookOpen,
 } from 'lucide-react';
 import { useCADStore } from '../store/useCADStore';
 
@@ -35,6 +36,8 @@ export const TopToolbar: React.FC = () => {
     canUndo,
     canRedo,
     setActiveModal,
+    garment,
+    executeGrading,
   } = useCADStore();
 
   return (
@@ -77,9 +80,10 @@ export const TopToolbar: React.FC = () => {
               Workstation
             </button>
             <button
-              onClick={() => setActiveModal('open')}
-              className="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+              onClick={() => setActiveModal('library')}
+              className="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors flex items-center gap-1"
             >
+              <BookOpen className="w-3.5 h-3.5" />
               Library
             </button>
             <button
@@ -90,14 +94,14 @@ export const TopToolbar: React.FC = () => {
               Grade Tables
             </button>
             <button
-              onClick={() => alert('Nesting & Cut module is ready for full production layout in next release.')}
+              onClick={() => setActiveModal('nesting')}
               className="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors flex items-center gap-1"
             >
               <Scissors className="w-3.5 h-3.5" />
               Nesting & Cut
             </button>
             <button
-              onClick={() => alert('Tech Pack exporter aggregates BOM, measurements, and tolerance specs.')}
+              onClick={() => setActiveModal('techPack')}
               className="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors flex items-center gap-1"
             >
               <ClipboardList className="w-3.5 h-3.5" />
@@ -297,10 +301,20 @@ export const TopToolbar: React.FC = () => {
             <Download className="w-3 h-3 text-blue-400" />
             Export Bundle
           </button>
-          <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-500/30 text-blue-400 font-semibold rounded flex items-center gap-1">
+          <button
+            onClick={() => {
+              if (garment.currentSize !== 'M') {
+                executeGrading('M');
+              } else {
+                executeGrading('S');
+              }
+            }}
+            title="Toggle Live Grade Preview"
+            className="px-2 py-0.5 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-400 font-semibold rounded flex items-center gap-1 transition-colors cursor-pointer"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
-            Live Preview S→M
-          </span>
+            Live Preview {garment.currentSize === 'M' ? 'M→S' : 'S→M'}
+          </button>
           <button
             onClick={() => setActiveModal('dbConnect')}
             id="toolbar-db-connect-btn"

@@ -7,7 +7,12 @@ import {
   Point2D,
   Project,
 } from '@shared/types';
-import { createDefaultBasicTShirt } from '@shared/constants';
+import {
+  createDefaultBasicTShirt,
+  createPoloTShirt,
+  createCasualShirt,
+  createChinoTrouser,
+} from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
 
 interface CADState {
@@ -33,11 +38,23 @@ interface CADState {
 
   // Grading execution & results
   isGrading: boolean;
+  activeGradingStep: 'idle' | 'neck' | 'shoulder' | 'bust' | 'waist' | 'hip' | 'hem';
   gradingNotification: string | null;
   lastGradingResult: GradingResult | null;
 
   // Active Modals
-  activeModal: 'none' | 'new' | 'open' | 'save' | 'export' | 'gradeTables' | 'jsonInspector' | 'dbConnect';
+  activeModal:
+    | 'none'
+    | 'new'
+    | 'open'
+    | 'save'
+    | 'export'
+    | 'gradeTables'
+    | 'jsonInspector'
+    | 'dbConnect'
+    | 'nesting'
+    | 'techPack'
+    | 'library';
 
   // Real Undo/Redo History Stack
   history: Garment[];
@@ -78,6 +95,7 @@ interface CADState {
   // Project Management
   loadProject: (project: Project) => void;
   createNewProject: (title?: string) => void;
+  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser') => void;
   setGarment: (garment: Garment) => void;
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
@@ -116,6 +134,7 @@ export const useCADStore = create<CADState>((set, get) => ({
   },
 
   isGrading: false,
+  activeGradingStep: 'idle',
   gradingNotification: null,
   lastGradingResult: null,
   activeModal: 'none',
@@ -195,9 +214,26 @@ export const useCADStore = create<CADState>((set, get) => ({
       throw new Error(`Garment is already size ${toSize}`);
     }
 
-    set({ isGrading: true, gradingNotification: `Grading sequence in progress: Neck → Shoulder → Bust → Waist → Hip → Hem...` });
+    set({
+      isGrading: true,
+      activeGradingStep: 'neck',
+      gradingNotification: `Grading sequence in progress: Neck → Shoulder → Bust → Waist → Hip → Hem...`,
+    });
 
     try {
+      // Step sequentially through the 6 nodes: Neck -> Shoulder -> Bust -> Waist -> Hip -> Hem
+      await new Promise((res) => setTimeout(res, 80));
+      set({ activeGradingStep: 'shoulder' });
+      await new Promise((res) => setTimeout(res, 80));
+      set({ activeGradingStep: 'bust' });
+      await new Promise((res) => setTimeout(res, 80));
+      set({ activeGradingStep: 'waist' });
+      await new Promise((res) => setTimeout(res, 80));
+      set({ activeGradingStep: 'hip' });
+      await new Promise((res) => setTimeout(res, 80));
+      set({ activeGradingStep: 'hem' });
+      await new Promise((res) => setTimeout(res, 80));
+
       // Execute 1-Object proportional vector grading
       const result = gradeGarment(state.garment, toSize, fromSize);
 
@@ -216,6 +252,7 @@ export const useCADStore = create<CADState>((set, get) => ({
         history: nextHistory,
         future: [],
         isGrading: false,
+        activeGradingStep: 'idle',
         gradingNotification: `Grading Complete — ${fromSize} → ${toSize}`,
       });
 
@@ -228,7 +265,7 @@ export const useCADStore = create<CADState>((set, get) => ({
 
       return result;
     } catch (err) {
-      set({ isGrading: false, gradingNotification: `Grading failed: ${(err as Error).message}` });
+      set({ isGrading: false, activeGradingStep: 'idle', gradingNotification: `Grading failed: ${(err as Error).message}` });
       throw err;
     }
   },
@@ -339,6 +376,37 @@ export const useCADStore = create<CADState>((set, get) => ({
       gradingNotification: 'Created new project',
     });
     setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  loadGarmentTemplate: (templateId) => {
+    const { history, garment, currentProject } = get();
+    let newGarment: Garment;
+    if (templateId === 'polo') {
+      newGarment = createPoloTShirt();
+    } else if (templateId === 'shirt') {
+      newGarment = createCasualShirt();
+    } else if (templateId === 'trouser') {
+      newGarment = createChinoTrouser();
+    } else {
+      newGarment = createDefaultBasicTShirt();
+    }
+    set({
+      garment: newGarment,
+      currentSize: newGarment.currentSize,
+      targetSize: newGarment.currentSize === 'S' ? 'M' : 'L',
+      selectedComponentId: 'entire',
+      currentProject: {
+        ...currentProject,
+        title: `${newGarment.name} — Size ${newGarment.currentSize} to ${newGarment.currentSize === 'S' ? 'M' : 'L'}`,
+        garment: newGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      lastGradingResult: null,
+      gradingNotification: `Loaded template: ${newGarment.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 3000);
   },
 
   setGarment: (garment) => {

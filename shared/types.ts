@@ -51,6 +51,10 @@ export interface PatternComponent {
   }>;
   measurements: {
     halfChest?: number;
+    waist?: number;
+    hip?: number;
+    length?: number;
+    inseam?: number;
     bodyLength?: number;
     armholeLength?: number;
     sleeveCapLength?: number;
