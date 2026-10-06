@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node ../dist/server/server/src/index.js"
+    "start": "node ../dist/server/server/src/index.js",
+    "test:atlas": "tsx src/scripts/testAtlas.ts",
+    "seed:atlas": "tsx src/scripts/seedAtlas.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
