@@ -301,10 +301,15 @@ export const TopToolbar: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
             Live Preview S→M
           </span>
-          <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-medium rounded flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            Sync Active
-          </span>
+          <button
+            onClick={() => setActiveModal('dbConnect')}
+            id="toolbar-db-connect-btn"
+            title="MongoDB Atlas Connection Settings"
+            className="px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-medium rounded flex items-center gap-1 transition-colors"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            MongoDB Atlas
+          </button>
         </div>
       </div>
     </header>

@@ -7,6 +7,7 @@ import { garmentsRouter } from './routes/garments.js';
 import { sizesRouter } from './routes/sizes.js';
 import { gradeRouter } from './routes/grade.js';
 import { exportRouter } from './routes/export.js';
+import { databaseRouter } from './routes/database.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/garments', garmentsRouter);
 app.use('/api/sizes', sizesRouter);
 app.use('/api/grade', gradeRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/db', databaseRouter);
 
 // Global Error Handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

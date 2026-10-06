@@ -37,7 +37,7 @@ interface CADState {
   lastGradingResult: GradingResult | null;
 
   // Active Modals
-  activeModal: 'none' | 'new' | 'open' | 'save' | 'export' | 'gradeTables' | 'jsonInspector';
+  activeModal: 'none' | 'new' | 'open' | 'save' | 'export' | 'gradeTables' | 'jsonInspector' | 'dbConnect';
 
   // Real Undo/Redo History Stack
   history: Garment[];
