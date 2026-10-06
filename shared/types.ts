@@ -78,8 +78,10 @@ export interface PatternComponent {
     sleeveLength?: number;
     hemWidth?: number;
     shoulderLength?: number;
+    shoulderWidth?: number;
   };
   offset: Point2D; // Relative layout offset inside garment workspace
+
 }
 
 export interface Garment {

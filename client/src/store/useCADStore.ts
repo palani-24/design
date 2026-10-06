@@ -21,8 +21,10 @@ import {
   createCasualShirt,
   createChinoTrouser,
   createWomensBootCutPant,
+  createMensTailoredSuitJacket,
 } from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
+
 
 
 interface CADState {
@@ -159,23 +161,21 @@ interface CADState {
   // Project Management
   loadProject: (project: Project) => void;
   createNewProject: (title?: string) => void;
-  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser' | 'bootcut-pant') => void;
+  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser' | 'bootcut-pant' | 'suit-jacket') => void;
   setGarment: (garment: Garment) => void;
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
 }
 
-
-const initialGarment = createWomensBootCutPant();
+const initialGarment = createMensTailoredSuitJacket();
 const initialProject: Project = {
-  id: 'proj-bootcut-pant-001',
-  title: 'Womens Boot Cut Pant — TUKAcad Studio v4.8',
-  description: '1-Object Parametric Nest with BK, FR, Pocket, and Fly components.',
+  id: 'proj-suit-jacket-001',
+  title: 'Mens Tailored Suit Jacket — TUKAdesign CAD Studio v4.8',
+  description: '16-Piece Industrial Nest with Back, Front, Sleeves, Side, Facing, Canvas & Fusing.',
   garment: initialGarment,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
-
 
 export const useCADStore = create<CADState>((set, get) => ({
   currentProject: initialProject,
@@ -186,7 +186,7 @@ export const useCADStore = create<CADState>((set, get) => ({
 
   activeTool: 'select',
   zoom: 1.0,
-  panOffset: { x: 40, y: 30 },
+  panOffset: { x: 30, y: 20 },
   showGrid: true,
   showRulers: true,
   cursorPos: { x: 0, y: 0 },
@@ -208,7 +208,7 @@ export const useCADStore = create<CADState>((set, get) => ({
   // TUKAcad Options
   cadTheme: 'tukacad-black',
   cadUnit: 'in',
-  showSeamAllowance: false,
+  showSeamAllowance: true,
   seamAllowanceWidthMm: 12.7,
   showInternals: true,
   showGrainlines: true,
@@ -225,9 +225,10 @@ export const useCADStore = create<CADState>((set, get) => ({
   togglePointLabels: () => set((state) => ({ showPointLabels: !state.showPointLabels })),
 
   // CLO 3D Standalone Studio Initial State
-  cadEngineMode: 'clo3d',
+  cadEngineMode: 'tukacad',
   cloViewMode: 'split',
-  language: 'ta',
+  language: 'en',
+
   isSimulating: true,
   windEnabled: false,
   surfaceMode: 'textured',
@@ -519,9 +520,12 @@ export const useCADStore = create<CADState>((set, get) => ({
       newGarment = createChinoTrouser();
     } else if (templateId === 'bootcut-pant') {
       newGarment = createWomensBootCutPant();
+    } else if (templateId === 'suit-jacket') {
+      newGarment = createMensTailoredSuitJacket();
     } else {
       newGarment = createDefaultBasicTShirt();
     }
+
     set({
       garment: newGarment,
       currentSize: newGarment.currentSize,

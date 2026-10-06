@@ -95,7 +95,8 @@ export const TukaMenuBar: React.FC = () => {
     {
       name: 'Piece',
       items: [
-        { label: 'Womens Boot Cut Pant (TUKA Default)', action: () => loadGarmentTemplate('bootcut-pant') },
+        { label: '★ Mens Tailored Suit Jacket (16-Piece Marker)', action: () => loadGarmentTemplate('suit-jacket') },
+        { label: 'Womens Boot Cut Pant (tud v4.8)', action: () => loadGarmentTemplate('bootcut-pant') },
         { label: 'Basic T-Shirt (Crew Neck)', action: () => loadGarmentTemplate('basic-tshirt') },
         { label: 'Polo T-Shirt (Collar & Placket)', action: () => loadGarmentTemplate('polo') },
         { label: 'Casual Button-Up Shirt', action: () => loadGarmentTemplate('shirt') },
@@ -103,6 +104,7 @@ export const TukaMenuBar: React.FC = () => {
         { divider: true },
         { label: 'Garment Pattern Library...', action: () => setActiveModal('library') },
       ],
+
     },
     {
       name: 'Grading',

@@ -23,11 +23,13 @@ export const LeftPanel: React.FC = () => {
     loadGarmentTemplate,
   } = useCADStore();
 
-  const [tshirtsExpanded, setTshirtsExpanded] = useState(true);
+  const [suitsExpanded, setSuitsExpanded] = useState(true);
+  const [tshirtsExpanded, setTshirtsExpanded] = useState(false);
   const [shirtsExpanded, setShirtsExpanded] = useState(false);
   const [trousersExpanded, setTrousersExpanded] = useState(false);
 
   const isEntireSelected = selectedComponentId === 'entire' || selectedComponentId === null;
+  const isSuitActive = garment.category === 'jacket' || garment.name.includes('Suit');
   const isBasicActive = garment.category === 't-shirt';
   const isPoloActive = garment.category === 'polo';
   const isShirtActive = garment.category === 'shirt';
@@ -53,6 +55,44 @@ export const LeftPanel: React.FC = () => {
 
       {/* Garment Categories List */}
       <div className="p-2 border-b border-slate-200 overflow-y-auto max-h-56 text-xs">
+        {/* Tailored Suit Jackets Category */}
+        <div className="mb-1">
+          <button
+            onClick={() => setSuitsExpanded(!suitsExpanded)}
+            className="w-full flex items-center justify-between p-1.5 hover:bg-slate-100 rounded text-slate-700 font-semibold text-left transition-colors"
+          >
+            <div className="flex items-center gap-1.5">
+              {suitsExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+              <span>Tailored Jackets & Suits (1)</span>
+            </div>
+            <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded font-medium">
+              {isSuitActive ? 'ACTIVE' : '1 Style'}
+            </span>
+          </button>
+          {suitsExpanded && (
+            <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isSuitActive
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('suit-jacket')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isSuitActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span className="text-xs">Mens Tailored Suit Jacket</span>
+                </div>
+                <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isSuitActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isSuitActive ? 'ACTIVE' : '16 Pcs'}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* T-Shirts Category */}
         <div className="mb-1">
           <button

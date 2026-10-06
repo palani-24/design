@@ -198,12 +198,13 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
               <path
                 d={pathData}
                 fill="none"
-                stroke={isTukaDark ? '#38bdf8' : '#60a5fa'}
+                stroke={isTukaDark ? '#ffffff' : '#60a5fa'}
                 strokeWidth="1.2"
                 strokeDasharray="4 3"
-                opacity="0.8"
+                opacity="0.88"
               />
             )}
+
 
             {/* Main Pattern Geometry Path */}
             <path
@@ -367,14 +368,32 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
                     />
                   );
                 }
-                return (
+                return isTukaDark ? (
+                  <rect
+                    key={`pt-${cmdIdx}-${ptIdx}`}
+                    x={pt.x - 2.8}
+                    y={pt.y - 2.8}
+                    width="5.6"
+                    height="5.6"
+                    fill={isSelected ? '#f97316' : (cmdIdx % 2 === 0 ? '#00ff44' : '#ffffff')}
+                    stroke={cmdIdx % 2 === 0 ? '#000000' : '#000000'}
+                    strokeWidth="0.9"
+                    className="hover:scale-150 transition-transform cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMeasureClick({ x: compX + pt.x, y: compY + pt.y });
+                    }}
+                  >
+                    <title>{pt.name || `Grading Node (${pt.x}, ${pt.y})`}</title>
+                  </rect>
+                ) : (
                   <circle
                     key={`pt-${cmdIdx}-${ptIdx}`}
                     cx={pt.x}
                     cy={pt.y}
                     r="3.5"
-                    fill={isSelected ? (isTukaDark ? '#f97316' : '#2563eb') : isTukaDark ? '#00ff44' : '#ffffff'}
-                    stroke={isTukaDark ? '#000000' : '#1e293b'}
+                    fill={isSelected ? '#2563eb' : '#ffffff'}
+                    stroke="#1e293b"
                     strokeWidth="1.5"
                     className="hover:scale-125 transition-transform cursor-pointer"
                     onClick={(e) => {
@@ -387,6 +406,7 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
                 );
               })
             )}
+
 
             {/* Text Annotations & Labels */}
             {component.labels.map((lbl, idx) => {

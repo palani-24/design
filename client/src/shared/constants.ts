@@ -1473,4 +1473,900 @@ export function createWomensBootCutPant(): Garment {
   };
 }
 
+// ==========================================
+// Men's Tailored Suit Jacket (Blazer Marker)
+// Authentic TUKAcad 16-Piece Nest
+// ==========================================
+export function createMensTailoredSuitJacket(): Garment {
+  // 1. BACK: Suit Jacket Back Panel
+  const backPanel: PatternComponent = {
+    id: 'suit-back',
+    pieceCode: 'BACK',
+    name: 'BACK - Jacket Back (1. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 230, y: 130 },
+    grainline: {
+      start: { x: 60, y: 55 },
+      end: { x: 260, y: 55 },
+      label: 'BACK ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 20 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 30, y: 10 },
+          { x: 70, y: 0 },
+          { x: 120, y: 0 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'shoulder',
+        points: [{ x: 320, y: 10 }],
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 330, y: 40 },
+          { x: 325, y: 90 },
+          { x: 310, y: 110 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 110 }],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 20 }],
+      },
+    ],
+    notches: [
+      { x: 70, y: 0 },
+      { x: 320, y: 10 },
+      { x: 325, y: 90 },
+      { x: 160, y: 110 },
+    ],
+    labels: [
+      { text: 'BACK', position: { x: 140, y: 45 }, type: 'title' },
+    ],
+    measurements: {
+      length: 76.0,
+      halfChest: 54.0,
+      shoulderWidth: 16.5,
+    },
+  };
+
+  // 2. FRONT: Suit Jacket Front Panel (with lapel, gorge & pocket welts)
+  const frontPanel: PatternComponent = {
+    id: 'suit-front',
+    pieceCode: 'FRONT',
+    name: 'FRONT - Jacket Front (2. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 230, y: 270 },
+    grainline: {
+      start: { x: 60, y: 65 },
+      end: { x: 260, y: 65 },
+      label: 'FRONT ↔',
+    },
+    internals: [
+      {
+        id: 'front-chest-dart',
+        name: 'Chest Dart',
+        type: 'dart',
+        points: [
+          { x: 110, y: 20 },
+          { x: 110, y: 80 },
+        ],
+        color: '#facc15',
+      },
+      {
+        id: 'breast-pocket-welt',
+        name: 'Breast Welt Pocket',
+        type: 'pocket',
+        points: [
+          { x: 180, y: 35 },
+          { x: 240, y: 45 },
+          { x: 240, y: 55 },
+          { x: 180, y: 45 },
+          { x: 180, y: 35 },
+        ],
+        closed: true,
+        color: '#facc15',
+      },
+      {
+        id: 'waist-pocket-welt',
+        name: 'Waist Flap Pocket Welt',
+        type: 'pocket',
+        points: [
+          { x: 210, y: 95 },
+          { x: 225, y: 95 },
+          { x: 225, y: 125 },
+          { x: 210, y: 125 },
+          { x: 210, y: 95 },
+        ],
+        closed: true,
+        color: '#facc15',
+      },
+    ],
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 30 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 40, y: 5 },
+          { x: 100, y: 0 },
+          { x: 180, y: 0 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'shoulder',
+        points: [{ x: 320, y: 15 }],
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 335, y: 55 },
+          { x: 310, y: 100 },
+          { x: 280, y: 120 },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 200, y: 135 },
+          { x: 90, y: 130 },
+          { x: 0, y: 115 },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 30 }],
+      },
+    ],
+    notches: [
+      { x: 100, y: 0 },
+      { x: 180, y: 0 },
+      { x: 320, y: 15 },
+      { x: 310, y: 100 },
+    ],
+    labels: [
+      { text: 'FRONT', position: { x: 150, y: 60 }, type: 'title' },
+    ],
+    measurements: {
+      length: 78.0,
+      halfChest: 56.0,
+    },
+  };
+
+  // 3. FRONT FUSE: Full Front Interlining Canvas
+  const frontFuse: PatternComponent = {
+    id: 'suit-front-fuse',
+    pieceCode: 'FRONT FUSE',
+    name: 'FRONT FUSE - Interfacing (3. 2)',
+    cutInstruction: 'Cut 2 Fusible',
+    quantity: 2,
+    offset: { x: 230, y: 430 },
+    grainline: {
+      start: { x: 60, y: 55 },
+      end: { x: 250, y: 55 },
+      label: 'FRONT FUSE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'neck',
+        points: [{ x: 310, y: 0 }],
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 325, y: 40 },
+          { x: 300, y: 90 },
+          { x: 270, y: 115 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 115 }],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [{ x: 310, y: 0 }, { x: 300, y: 90 }],
+    labels: [{ text: 'FRONT FUSE', position: { x: 135, y: 50 }, type: 'title' }],
+    measurements: { length: 74.0 },
+  };
+
+  // 4. FRT FACING: Front Lapel Facing
+  const frontFacing: PatternComponent = {
+    id: 'suit-frt-facing',
+    pieceCode: 'FRT FACING',
+    name: 'FRT FACING - Lapel Facing (4. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 230, y: 570 },
+    grainline: {
+      start: { x: 50, y: 35 },
+      end: { x: 220, y: 35 },
+      label: 'FRT FACING ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'neck',
+        points: [{ x: 0, y: 20 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 80, y: 0 },
+          { x: 200, y: 0 },
+          { x: 290, y: 15 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 280, y: 55 }],
+      },
+      {
+        type: 'C',
+        zone: 'center-fold',
+        points: [
+          { x: 180, y: 45 },
+          { x: 70, y: 45 },
+          { x: 0, y: 55 },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'neck',
+        points: [{ x: 0, y: 20 }],
+      },
+    ],
+    notches: [{ x: 150, y: 0 }],
+    labels: [{ text: 'FRT FACING', position: { x: 130, y: 30 }, type: 'title' }],
+    measurements: { length: 65.0 },
+  };
+
+  // 5. UNDER COLLAR / BRIDLE
+  const underCollarBridle: PatternComponent = {
+    id: 'suit-under-collar-bridle',
+    pieceCode: 'UNDER COLLAR',
+    name: 'UNDER COLLAR (5. 2)',
+    cutInstruction: 'Cut 2 Bias Melton',
+    quantity: 2,
+    offset: { x: 230, y: 660 },
+    grainline: {
+      start: { x: 20, y: 15 },
+      end: { x: 130, y: 15 },
+      label: 'UNDER COLLAR ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'neck',
+        points: [{ x: 0, y: 10 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 40, y: 0 },
+          { x: 110, y: 0 },
+          { x: 150, y: 10 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 140, y: 35 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 100, y: 25 },
+          { x: 40, y: 25 },
+          { x: 0, y: 35 },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'neck',
+        points: [{ x: 0, y: 10 }],
+      },
+    ],
+    notches: [{ x: 75, y: 0 }],
+    labels: [{ text: 'UNDER COLLAR', position: { x: 60, y: 20 }, type: 'title' }],
+    measurements: { length: 42.0 },
+  };
+
+  // 6. TOP SLEEVE: Two-Piece Upper Sleeve Panel
+  const topSleeve: PatternComponent = {
+    id: 'suit-top-sleeve',
+    pieceCode: 'TOP SLEEVE',
+    name: 'TOP SLEEVE - Upper Sleeve (6. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 590, y: 130 },
+    grainline: {
+      start: { x: 45, y: 55 },
+      end: { x: 215, y: 55 },
+      label: 'TOP SLEEVE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'sleeve-cap',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-seam',
+        points: [{ x: 170, y: 0 }],
+      },
+      {
+        type: 'C',
+        zone: 'sleeve-cap',
+        points: [
+          { x: 215, y: 10 },
+          { x: 260, y: 40 },
+          { x: 255, y: 80 },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'sleeve-seam',
+        points: [
+          { x: 240, y: 105 },
+          { x: 180, y: 115 },
+          { x: 0, y: 110 },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'sleeve-hem',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [
+      { x: 170, y: 0 },
+      { x: 260, y: 40 },
+      { x: 100, y: 110 },
+    ],
+    labels: [{ text: 'TOP SLEEVE', position: { x: 120, y: 45 }, type: 'title' }],
+    measurements: { length: 64.0, sleeveLength: 64.0 },
+  };
+
+  // 7. UND SLEEVE: Two-Piece Under Sleeve Panel
+  const undSleeve: PatternComponent = {
+    id: 'suit-und-sleeve',
+    pieceCode: 'UND SLEEVE',
+    name: 'UND SLEEVE - Under Sleeve (7. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 590, y: 270 },
+    grainline: {
+      start: { x: 40, y: 40 },
+      end: { x: 180, y: 40 },
+      label: 'UND SLEEVE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'sleeve-cap',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-seam',
+        points: [{ x: 170, y: 10 }],
+      },
+      {
+        type: 'C',
+        zone: 'sleeve-cap',
+        points: [
+          { x: 210, y: 30 },
+          { x: 220, y: 65 },
+          { x: 195, y: 85 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-seam',
+        points: [{ x: 0, y: 85 }],
+      },
+      {
+        type: 'Z',
+        zone: 'sleeve-hem',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [{ x: 170, y: 10 }, { x: 210, y: 30 }],
+    labels: [{ text: 'UND SLEEVE', position: { x: 100, y: 35 }, type: 'title' }],
+    measurements: { length: 58.0 },
+  };
+
+  // 8. SIDE: Jacket Side Body Panel
+  const sidePanel: PatternComponent = {
+    id: 'suit-side',
+    pieceCode: 'SIDE',
+    name: 'SIDE - Side Body (8. 2)',
+    cutInstruction: 'Cut 2 in Fabric',
+    quantity: 2,
+    offset: { x: 590, y: 390 },
+    grainline: {
+      start: { x: 40, y: 45 },
+      end: { x: 180, y: 45 },
+      label: 'SIDE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'armhole',
+        points: [{ x: 0, y: 10 }],
+      },
+      {
+        type: 'L',
+        zone: 'armhole',
+        points: [{ x: 150, y: 0 }],
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 190, y: 15 },
+          { x: 220, y: 55 },
+          { x: 200, y: 85 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 85 }],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 10 }],
+      },
+    ],
+    notches: [{ x: 150, y: 0 }, { x: 190, y: 15 }],
+    labels: [{ text: 'SIDE', position: { x: 105, y: 38 }, type: 'title' }],
+    measurements: { length: 55.0 },
+  };
+
+  // 9. FRT CHEST: Front Chest Canvas Reinforcement
+  const frtChest: PatternComponent = {
+    id: 'suit-frt-chest',
+    pieceCode: 'FRT CHEST',
+    name: 'FRT CHEST - Chest Piece (9. 2)',
+    cutInstruction: 'Cut 2 Canvas',
+    quantity: 2,
+    offset: { x: 590, y: 500 },
+    grainline: {
+      start: { x: 30, y: 35 },
+      end: { x: 140, y: 35 },
+      label: 'FRT CHEST ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'neck',
+        points: [{ x: 150, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'armhole',
+        points: [{ x: 160, y: 70 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 65 }],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [{ x: 150, y: 0 }],
+    labels: [{ text: 'FRT CHEST', position: { x: 75, y: 30 }, type: 'title' }],
+    measurements: { length: 28.0 },
+  };
+
+  // 10. FRONT CHEST FELT: Chest Felt Pad
+  const frontChestFelt: PatternComponent = {
+    id: 'suit-front-chest-felt',
+    pieceCode: 'FRONT CHEST FELT',
+    name: 'FRONT CHEST FELT (10. 2)',
+    cutInstruction: 'Cut 2 Wool Felt',
+    quantity: 2,
+    offset: { x: 590, y: 590 },
+    grainline: {
+      start: { x: 30, y: 40 },
+      end: { x: 130, y: 40 },
+      label: 'FRONT CHEST FELT ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'neck',
+        points: [{ x: 140, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'armhole',
+        points: [{ x: 150, y: 80 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 75 }],
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'FRONT CHEST FELT', position: { x: 65, y: 35 }, type: 'title' }],
+    measurements: { length: 26.0 },
+  };
+
+  // 11. COLLAR: Jacket Collar Stand and Leaf
+  const collarPiece: PatternComponent = {
+    id: 'suit-collar',
+    pieceCode: 'COLLAR',
+    name: 'COLLAR - Upper Collar (11. 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    offset: { x: 880, y: 130 },
+    grainline: {
+      start: { x: 20, y: 25 },
+      end: { x: 110, y: 25 },
+      label: 'COLLAR ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'neck',
+        points: [{ x: 0, y: 10 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 35, y: 0 },
+          { x: 95, y: 0 },
+          { x: 130, y: 10 },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 120, y: 50 }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 85, y: 40 },
+          { x: 35, y: 40 },
+          { x: 0, y: 50 },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'neck',
+        points: [{ x: 0, y: 10 }],
+      },
+    ],
+    notches: [{ x: 65, y: 0 }],
+    labels: [{ text: 'COLLAR', position: { x: 55, y: 25 }, type: 'title' }],
+    measurements: { length: 44.0 },
+  };
+
+  // 12. CHEST CANVAS: Chest Floating Canvas Piece
+  const chestCanvas: PatternComponent = {
+    id: 'suit-chest-canvas',
+    pieceCode: 'CHEST CANVAS',
+    name: 'CHEST CANVAS (12. 2)',
+    cutInstruction: 'Cut 2 Horsehair Canvas',
+    quantity: 2,
+    offset: { x: 880, y: 210 },
+    grainline: {
+      start: { x: 20, y: 35 },
+      end: { x: 100, y: 35 },
+      label: 'CHEST CANVAS ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'neck',
+        points: [{ x: 0, y: 15 }],
+      },
+      {
+        type: 'L',
+        zone: 'neck',
+        points: [{ x: 125, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'armhole',
+        points: [{ x: 130, y: 65 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 60 }],
+      },
+      {
+        type: 'Z',
+        zone: 'neck',
+        points: [{ x: 0, y: 15 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'CHEST CANVAS', position: { x: 55, y: 30 }, type: 'title' }],
+    measurements: { length: 25.0 },
+  };
+
+  // 13. SHOULDER CANVAS: Shoulder Pad Reinforcement
+  const shoulderCanvas: PatternComponent = {
+    id: 'suit-shoulder-canvas',
+    pieceCode: 'SHOULDER CANVAS',
+    name: 'SHOULDER CANVAS (13. 2)',
+    cutInstruction: 'Cut 2 Pad Canvas',
+    quantity: 2,
+    offset: { x: 880, y: 295 },
+    grainline: {
+      start: { x: 15, y: 25 },
+      end: { x: 90, y: 25 },
+      label: 'SHOULDER CANVAS ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 20 }],
+      },
+      {
+        type: 'L',
+        zone: 'shoulder',
+        points: [{ x: 110, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'armhole',
+        points: [{ x: 115, y: 55 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 50 }],
+      },
+      {
+        type: 'Z',
+        zone: 'shoulder',
+        points: [{ x: 0, y: 20 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'SHOULDER CANVAS', position: { x: 45, y: 25 }, type: 'title' }],
+    measurements: { length: 20.0 },
+  };
+
+  // 14. CANVAS: Floating Canvas Strip
+  const canvasStrip: PatternComponent = {
+    id: 'suit-canvas-strip',
+    pieceCode: 'CANVAS',
+    name: 'CANVAS - Strip (14. 2)',
+    cutInstruction: 'Cut 2 Canvas',
+    quantity: 2,
+    offset: { x: 880, y: 375 },
+    grainline: {
+      start: { x: 15, y: 18 },
+      end: { x: 80, y: 18 },
+      label: 'CANVAS ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 95, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 95, y: 35 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 35 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'CANVAS', position: { x: 35, y: 18 }, type: 'title' }],
+    measurements: { length: 18.0 },
+  };
+
+  // 15. BOTTOM WELT: Pocket Welt Rectangle
+  const bottomWelt: PatternComponent = {
+    id: 'suit-bottom-welt',
+    pieceCode: 'BOTTOM WELT',
+    name: 'BOTTOM WELT (15. 2)',
+    cutInstruction: 'Cut 2 Pocket Welt',
+    quantity: 2,
+    offset: { x: 880, y: 430 },
+    grainline: {
+      start: { x: 10, y: 12 },
+      end: { x: 65, y: 12 },
+      label: 'BOTTOM WELT ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 75, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 75, y: 24 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 24 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'BOTTOM WELT', position: { x: 20, y: 14 }, type: 'title' }],
+    measurements: { length: 16.0 },
+  };
+
+  // 16. UNSLEEVE FUSE: Under Sleeve Cuff Fusing
+  const unsleeveFuse: PatternComponent = {
+    id: 'suit-unsleeve-fuse',
+    pieceCode: 'UNSLEEVE FUSE',
+    name: 'UNSLEEVE FUSE (16. 2)',
+    cutInstruction: 'Cut 2 Fusible',
+    quantity: 2,
+    offset: { x: 880, y: 475 },
+    grainline: {
+      start: { x: 15, y: 20 },
+      end: { x: 80, y: 20 },
+      label: 'UNSLEEVE FUSE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'sleeve-hem',
+        points: [{ x: 0, y: 10 }],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-hem',
+        points: [{ x: 95, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-hem',
+        points: [{ x: 90, y: 45 }],
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-hem',
+        points: [{ x: 0, y: 40 }],
+      },
+      {
+        type: 'Z',
+        zone: 'sleeve-hem',
+        points: [{ x: 0, y: 10 }],
+      },
+    ],
+    notches: [],
+    labels: [{ text: 'UNSLEEVE FUSE', position: { x: 30, y: 22 }, type: 'title' }],
+    measurements: { length: 22.0 },
+  };
+
+  return {
+    id: 'garment-mens-suit-jacket-006',
+    name: "Mens Tailored Suit Jacket",
+    category: 'jacket',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [
+      backPanel,
+      frontPanel,
+      frontFuse,
+      frontFacing,
+      underCollarBridle,
+      topSleeve,
+      undSleeve,
+      sidePanel,
+      frtChest,
+      frontChestFelt,
+      collarPiece,
+      chestCanvas,
+      shoulderCanvas,
+      canvasStrip,
+      bottomWelt,
+      unsleeveFuse,
+    ],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+
 

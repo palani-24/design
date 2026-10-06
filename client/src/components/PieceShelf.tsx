@@ -68,6 +68,39 @@ export const PieceShelf: React.FC = () => {
           const pieceCode = comp.pieceCode || comp.id.toUpperCase();
           const cutInfo = comp.quantity ? `${idx + 1}. ${comp.quantity}` : `${idx + 1}. 1`;
 
+          // Compute viewBox dynamically based on piece coordinate bounds
+          const isLargeCoord = comp.paths.some((p) => p.points.some((pt) => pt.x > 450 || pt.y > 450));
+          const svgViewBox = isLargeCoord ? "-30 -30 1100 900" : "-15 -15 360 160";
+
+          // Custom colors matching TUKAcad screenshot
+          let pieceFill = isTukaDark ? '#22c55e' : '#64748b';
+          let pieceFillOpacity = 0.2;
+          let pieceStroke = isTukaDark ? '#22c55e' : '#334155';
+
+          if (pieceCode.includes('CHEST CANVAS') || comp.id.includes('frt-chest')) {
+            pieceFill = '#d946ef'; // Magenta filled canvas
+            pieceFillOpacity = 0.8;
+            pieceStroke = '#f472b6';
+          } else if (pieceCode.includes('SHOULDER CANVAS')) {
+            pieceFill = '#38bdf8'; // Cyan filled shoulder pad
+            pieceFillOpacity = 0.8;
+            pieceStroke = '#0284c7';
+          } else if (pieceCode === 'CANVAS') {
+            pieceFill = '#d97706'; // Tan filled canvas
+            pieceFillOpacity = 0.85;
+            pieceStroke = '#b45309';
+          } else if (pieceCode.includes('FUSE') || pieceCode.includes('FACING')) {
+            pieceFill = '#f472b6'; // Pink outline fuse
+            pieceFillOpacity = 0.3;
+            pieceStroke = '#ec4899';
+          }
+
+          if (isSelected) {
+            pieceFill = '#f97316';
+            pieceFillOpacity = 0.5;
+            pieceStroke = '#fb923c';
+          }
+
           return (
             <div
               key={comp.id}
@@ -90,16 +123,16 @@ export const PieceShelf: React.FC = () => {
                 }`}
               >
                 <svg
-                  viewBox="-30 -30 1100 900"
+                  viewBox={svgViewBox}
                   className="w-full h-full pointer-events-none"
                   preserveAspectRatio="xMidYMid meet"
                 >
                   <path
                     d={pathData}
-                    fill={isSelected ? (isTukaDark ? '#f97316' : '#2563eb') : isTukaDark ? '#22c55e' : '#64748b'}
-                    fillOpacity={isSelected ? 0.35 : 0.2}
-                    stroke={isSelected ? (isTukaDark ? '#fb923c' : '#2563eb') : isTukaDark ? '#22c55e' : '#334155'}
-                    strokeWidth="20"
+                    fill={pieceFill}
+                    fillOpacity={pieceFillOpacity}
+                    stroke={pieceStroke}
+                    strokeWidth={isLargeCoord ? "18" : "8"}
                   />
                   {/* Internal contours mini preview */}
                   {comp.internals && comp.internals.length > 0 && (
@@ -107,11 +140,12 @@ export const PieceShelf: React.FC = () => {
                       points={comp.internals[0].points.map((p) => `${p.x},${p.y}`).join(' ')}
                       fill="none"
                       stroke="#facc15"
-                      strokeWidth="15"
+                      strokeWidth={isLargeCoord ? "14" : "6"}
                     />
                   )}
                 </svg>
               </div>
+
 
               {/* TUKAcad Piece Code & Cut index */}
               <div className="w-full text-center font-mono leading-tight">
