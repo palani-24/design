@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    user-select: none;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #0b1120;
+  }
+
+  code, pre, .font-cad-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* CAD Grid lines */
+.cad-workspace-grid {
+  background-size: 20px 20px, 100px 100px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.45) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.45) 1px, transparent 1px),
+    linear-gradient(to right, rgba(203, 213, 225, 0.7) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(203, 213, 225, 0.7) 1px, transparent 1px);
+}
+
+.cad-workspace-grid-dark {
+  background-size: 20px 20px, 100px 100px;
+  background-image: 
+    linear-gradient(to right, rgba(51, 65, 85, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(51, 65, 85, 0.25) 1px, transparent 1px),
+    linear-gradient(to right, rgba(71, 85, 105, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(71, 85, 105, 0.4) 1px, transparent 1px);
+}
+
+/* Custom scrollbars for CAD panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Subtle CAD pulse animation */
+@keyframes cad-pulse {
+  0%, 100% {
+    opacity: 0.9;
+    stroke-width: 1.5;
+  }
+  50% {
+    opacity: 0.4;
+    stroke-width: 2.5;
+  }
+}
+
+.animate-cad-pulse {
+  animation: cad-pulse 2s infinite ease-in-out;
+}
