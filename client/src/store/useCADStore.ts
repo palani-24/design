@@ -8,6 +8,12 @@ import {
   Project,
   CADTheme,
   CADUnit,
+  CADEngineMode,
+  CloViewMode,
+  Language,
+  SurfaceMode,
+  AvatarPose,
+  FabricPhysics,
 } from '@shared/types';
 import {
   createDefaultBasicTShirt,
@@ -17,6 +23,7 @@ import {
   createWomensBootCutPant,
 } from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
+
 
 interface CADState {
   // Project & Garment
@@ -113,6 +120,36 @@ interface CADState {
   handleMeasureClick: (point: Point2D) => void;
   clearMeasure: () => void;
 
+  // CLO 3D Standalone Studio States
+  cadEngineMode: CADEngineMode;
+  cloViewMode: CloViewMode;
+  language: Language;
+  isSimulating: boolean;
+  windEnabled: boolean;
+  surfaceMode: SurfaceMode;
+  selectedAvatarPose: AvatarPose;
+  avatarVisible: boolean;
+  garmentVisible: boolean;
+  activeFabric: FabricPhysics;
+  activeLibraryTab: string;
+  activeRightTab: 'none' | 'objectBrowser' | 'propertyEditor';
+  activeLeftDrawer: 'library' | 'history' | 'modular' | 'none';
+
+  // CLO 3D Actions
+  setCADEngineMode: (mode: CADEngineMode) => void;
+  setCloViewMode: (mode: CloViewMode) => void;
+  setLanguage: (lang: Language) => void;
+  toggleSimulation: () => void;
+  toggleWind: () => void;
+  setSurfaceMode: (mode: SurfaceMode) => void;
+  setSelectedAvatarPose: (pose: AvatarPose) => void;
+  toggleAvatarVisible: () => void;
+  toggleGarmentVisible: () => void;
+  setActiveFabric: (fabric: Partial<FabricPhysics>) => void;
+  setActiveLibraryTab: (tab: string) => void;
+  setActiveRightTab: (tab: 'none' | 'objectBrowser' | 'propertyEditor') => void;
+  setActiveLeftDrawer: (drawer: 'library' | 'history' | 'modular' | 'none') => void;
+
   // Undo / Redo
   undo: () => void;
   redo: () => void;
@@ -127,6 +164,7 @@ interface CADState {
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
 }
+
 
 const initialGarment = createWomensBootCutPant();
 const initialProject: Project = {
@@ -186,8 +224,53 @@ export const useCADStore = create<CADState>((set, get) => ({
   toggleNotches: () => set((state) => ({ showNotches: !state.showNotches })),
   togglePointLabels: () => set((state) => ({ showPointLabels: !state.showPointLabels })),
 
+  // CLO 3D Standalone Studio Initial State
+  cadEngineMode: 'clo3d',
+  cloViewMode: 'split',
+  language: 'ta',
+  isSimulating: true,
+  windEnabled: false,
+  surfaceMode: 'textured',
+  selectedAvatarPose: 'FV2_01_A',
+  avatarVisible: true,
+  garmentVisible: true,
+  activeFabric: {
+    id: 'fab-silk-01',
+    name: 'Silk Charmeuse 16mm',
+    type: 'Silk',
+    color: '#a5f3fc',
+    stretchWarp: 15,
+    stretchWeft: 28,
+    bending: 12,
+    shear: 18,
+    density: 110,
+    thickness: 0.28,
+    roughness: 0.35,
+    metalness: 0.1,
+  },
+  activeLibraryTab: 'Avatar',
+  activeRightTab: 'none',
+  activeLeftDrawer: 'library',
+
+  // CLO 3D Actions
+  setCADEngineMode: (mode) => set({ cadEngineMode: mode }),
+  setCloViewMode: (mode) => set({ cloViewMode: mode }),
+  setLanguage: (lang) => set({ language: lang }),
+  toggleSimulation: () => set((s) => ({ isSimulating: !s.isSimulating })),
+  toggleWind: () => set((s) => ({ windEnabled: !s.windEnabled })),
+  setSurfaceMode: (mode) => set({ surfaceMode: mode }),
+  setSelectedAvatarPose: (pose) => set({ selectedAvatarPose: pose }),
+  toggleAvatarVisible: () => set((s) => ({ avatarVisible: !s.avatarVisible })),
+  toggleGarmentVisible: () => set((s) => ({ garmentVisible: !s.garmentVisible })),
+  setActiveFabric: (fabricUpdate) =>
+    set((s) => ({ activeFabric: { ...s.activeFabric, ...fabricUpdate } })),
+  setActiveLibraryTab: (tab) => set({ activeLibraryTab: tab }),
+  setActiveRightTab: (tab) => set({ activeRightTab: tab }),
+  setActiveLeftDrawer: (drawer) => set({ activeLeftDrawer: drawer }),
+
   history: [],
   future: [],
+
 
   setTool: (tool) => {
     set({

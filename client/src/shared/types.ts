@@ -144,3 +144,47 @@ export interface MeasureToolState {
   currentDistanceMm: number | null;
   currentDistanceCm: number | null;
 }
+
+// ==========================================
+// CLO 3D Standalone Engine Types
+// ==========================================
+export type CADEngineMode = 'clo3d' | 'tukacad';
+export type CloViewMode = 'split' | '3d-only' | '2d-only';
+export type Language = 'ta' | 'en';
+export type SurfaceMode = 'textured' | 'wireframe' | 'stressMap' | 'translucent';
+
+export type AvatarPose =
+  | 'FV2_01_A'
+  | 'FV2_02_Aforsize'
+  | 'FV2_03_Attention'
+  | 'FV2_04'
+  | 'FV2_08_Running'
+  | 'FV2_09_Sitting'
+  | 'FV2_10_ArmsUp';
+
+export interface FabricPhysics {
+  id: string;
+  name: string;
+  type: string;
+  color: string;
+  stretchWarp: number; // 0-100
+  stretchWeft: number; // 0-100
+  bending: number;     // 0-100
+  shear: number;       // 0-100
+  density: number;     // g/m^2 (e.g. 180)
+  thickness: number;   // mm (e.g. 0.45)
+  roughness: number;   // 0.0 - 1.0
+  metalness: number;   // 0.0 - 1.0
+}
+
+export interface SeamLink {
+  id: string;
+  name: string;
+  sourcePiece: string;
+  sourceEdge: string;
+  targetPiece: string;
+  targetEdge: string;
+  lengthMm: number;
+  color?: string;
+}
+

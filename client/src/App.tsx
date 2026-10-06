@@ -17,11 +17,12 @@ import { WalkSeamModal } from './components/modals/WalkSeamModal';
 import { EFitPreviewModal } from './components/modals/EFitPreviewModal';
 import { SeamAllowanceModal } from './components/modals/SeamAllowanceModal';
 import { DartPleatModal } from './components/modals/DartPleatModal';
+import { CloMainStudio } from './components/clo3d/CloMainStudio';
 import { useCADStore } from './store/useCADStore';
 
 
 export const App: React.FC = () => {
-  const { undo, redo, setActiveModal, setTool } = useCADStore();
+  const { undo, redo, setActiveModal, setTool, cadEngineMode } = useCADStore();
 
   // Keyboard shortcut listener
   useEffect(() => {
@@ -66,23 +67,30 @@ export const App: React.FC = () => {
   }, [undo, redo, setActiveModal, setTool]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 select-none">
-      {/* Top Application Toolbar & TUKA Windows Menu */}
-      <TukaMenuBar />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#121316] select-none font-sans">
+      {/* Dynamic Engine Workspace: CLO 3D or TUKAcad */}
+      {cadEngineMode === 'clo3d' ? (
+        <CloMainStudio />
+      ) : (
+        <div className="flex flex-col h-full w-full overflow-hidden">
+          {/* Top Application Toolbar & TUKA Windows Menu */}
+          <TukaMenuBar />
 
-      {/* Main CAD 3-Pane Viewport */}
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left: Garments & 1-Object Hierarchy */}
-        <LeftPanel />
+          {/* Main CAD 3-Pane Viewport */}
+          <main className="flex-1 flex overflow-hidden">
+            {/* Left: Garments & 1-Object Hierarchy */}
+            <LeftPanel />
 
-        {/* Center: Interactive SVG Vector Canvas */}
-        <PatternWorkspace />
+            {/* Center: Interactive SVG Vector Canvas */}
+            <PatternWorkspace />
 
-        {/* Right: Proportional Vector Grading Panel */}
-        <RightGradingPanel />
-      </main>
+            {/* Right: Proportional Vector Grading Panel */}
+            <RightGradingPanel />
+          </main>
+        </div>
+      )}
 
-      {/* Modal Dialogs */}
+      {/* Modal Dialogs Available in Both Modes */}
       <NewProjectModal />
       <OpenProjectModal />
       <SaveProjectModal />
@@ -102,3 +110,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

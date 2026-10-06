@@ -60,7 +60,9 @@ export const TukaMenuBar: React.FC = () => {
     targetSize,
     garment,
     loadGarmentTemplate,
+    setCADEngineMode,
   } = useCADStore();
+
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
@@ -259,8 +261,19 @@ export const TukaMenuBar: React.FC = () => {
               </option>
             </select>
           </div>
+
+          {/* Switch to CLO 3D Studio */}
+          <button
+            onClick={() => setCADEngineMode('clo3d')}
+            className="px-2 py-0.5 rounded bg-[#00a8ff] hover:bg-[#0096e6] text-white text-[10px] font-bold shadow-xs transition-colors flex items-center gap-1"
+            title="Switch to CLO 3D Standalone Studio"
+          >
+            <Box className="w-3 h-3" />
+            <span>CLO 3D Studio</span>
+          </button>
         </div>
       </div>
+
 
       {/* 2. Menu Bar (File, Edit, Piece, Grading, Point, Segment, Internals, Darts, Seam, Walk...) */}
       <nav className="h-6 px-2 bg-[#1e293b] text-zinc-200 border-b border-zinc-700/60 flex items-center gap-0.5 text-xs font-sans">
