@@ -6,12 +6,15 @@ import {
   MeasureToolState,
   Point2D,
   Project,
+  CADTheme,
+  CADUnit,
 } from '@shared/types';
 import {
   createDefaultBasicTShirt,
   createPoloTShirt,
   createCasualShirt,
   createChinoTrouser,
+  createWomensBootCutPant,
 } from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
 
@@ -32,6 +35,16 @@ interface CADState {
   showGrid: boolean;
   showRulers: boolean;
   cursorPos: { x: number; y: number };
+
+  // TUKAcad Options & Display Settings
+  cadTheme: CADTheme; // 'tukacad-black' | 'cad-slate' | 'blueprint-light'
+  cadUnit: CADUnit; // 'in' | 'cm'
+  showSeamAllowance: boolean;
+  seamAllowanceWidthMm: number;
+  showInternals: boolean;
+  showGrainlines: boolean;
+  showNotches: boolean;
+  showPointLabels: boolean;
 
   // Measurement tool state
   measureState: MeasureToolState;
@@ -54,7 +67,11 @@ interface CADState {
     | 'dbConnect'
     | 'nesting'
     | 'techPack'
-    | 'library';
+    | 'library'
+    | 'walkSeam'
+    | 'eFit'
+    | 'seamAllowance'
+    | 'dartPleat';
 
   // Real Undo/Redo History Stack
   history: Garment[];
@@ -69,6 +86,16 @@ interface CADState {
   toggleGrid: () => void;
   toggleRulers: () => void;
   setCursorPos: (pos: { x: number; y: number }) => void;
+
+  // TUKA Options actions
+  setCADTheme: (theme: CADTheme) => void;
+  setCADUnit: (unit: CADUnit) => void;
+  toggleSeamAllowance: () => void;
+  setSeamAllowanceWidth: (widthMm: number) => void;
+  toggleInternals: () => void;
+  toggleGrainlines: () => void;
+  toggleNotches: () => void;
+  togglePointLabels: () => void;
 
   setSelectedComponent: (id: string | 'entire' | null) => void;
   selectEntireGarment: () => void;
@@ -95,21 +122,22 @@ interface CADState {
   // Project Management
   loadProject: (project: Project) => void;
   createNewProject: (title?: string) => void;
-  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser') => void;
+  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser' | 'bootcut-pant') => void;
   setGarment: (garment: Garment) => void;
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
 }
 
-const initialGarment = createDefaultBasicTShirt();
+const initialGarment = createWomensBootCutPant();
 const initialProject: Project = {
-  id: 'proj-basic-tshirt-001',
-  title: 'Basic T-Shirt — Size S to M v1.4',
-  description: '1-Object Parametric Nest with Front, Back and Sleeve components.',
+  id: 'proj-bootcut-pant-001',
+  title: 'Womens Boot Cut Pant — TUKAcad Studio v4.8',
+  description: '1-Object Parametric Nest with BK, FR, Pocket, and Fly components.',
   garment: initialGarment,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
+
 
 export const useCADStore = create<CADState>((set, get) => ({
   currentProject: initialProject,
@@ -138,6 +166,25 @@ export const useCADStore = create<CADState>((set, get) => ({
   gradingNotification: null,
   lastGradingResult: null,
   activeModal: 'none',
+
+  // TUKAcad Options
+  cadTheme: 'tukacad-black',
+  cadUnit: 'in',
+  showSeamAllowance: false,
+  seamAllowanceWidthMm: 12.7,
+  showInternals: true,
+  showGrainlines: true,
+  showNotches: true,
+  showPointLabels: true,
+
+  setCADTheme: (theme) => set({ cadTheme: theme }),
+  setCADUnit: (unit) => set({ cadUnit: unit }),
+  toggleSeamAllowance: () => set((state) => ({ showSeamAllowance: !state.showSeamAllowance })),
+  setSeamAllowanceWidth: (widthMm) => set({ seamAllowanceWidthMm: widthMm }),
+  toggleInternals: () => set((state) => ({ showInternals: !state.showInternals })),
+  toggleGrainlines: () => set((state) => ({ showGrainlines: !state.showGrainlines })),
+  toggleNotches: () => set((state) => ({ showNotches: !state.showNotches })),
+  togglePointLabels: () => set((state) => ({ showPointLabels: !state.showPointLabels })),
 
   history: [],
   future: [],
@@ -387,6 +434,8 @@ export const useCADStore = create<CADState>((set, get) => ({
       newGarment = createCasualShirt();
     } else if (templateId === 'trouser') {
       newGarment = createChinoTrouser();
+    } else if (templateId === 'bootcut-pant') {
+      newGarment = createWomensBootCutPant();
     } else {
       newGarment = createDefaultBasicTShirt();
     }

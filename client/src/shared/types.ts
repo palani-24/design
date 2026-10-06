@@ -33,10 +33,25 @@ export interface PatternPathCommand {
   zone?: 'neck' | 'shoulder' | 'armhole' | 'bust' | 'waist' | 'hip' | 'hem' | 'sleeve-cap' | 'sleeve-seam' | 'sleeve-hem' | 'center-fold';
 }
 
+export type CADTheme = 'tukacad-black' | 'cad-slate' | 'blueprint-light';
+export type CADUnit = 'in' | 'cm';
+
+export interface InternalContour {
+  id: string;
+  name: string;
+  type: 'line' | 'pocket' | 'dart' | 'pleat' | 'graphic';
+  points: Point2D[];
+  closed?: boolean;
+  color?: string;
+  graphicSvg?: string;
+}
+
 export interface PatternComponent {
   id: string; // 'front' | 'back' | 'sleeve'
+  pieceCode?: string; // 'BK', 'FR', 'BK-PK', 'COIN', 'WB', etc. (TUKA Piece Code)
   name: string; // 'Front Component', 'Back Component', 'Sleeve (Pair)'
   cutInstruction: string; // 'Cut 1 on Fold' | 'Cut 1' | 'Cut 2 (Pair)'
+  quantity?: number;
   grainline: {
     start: Point2D;
     end: Point2D;
@@ -44,6 +59,8 @@ export interface PatternComponent {
   };
   paths: PatternPathCommand[];
   notches: Point2D[];
+  internals?: InternalContour[];
+  seamAllowanceMm?: number;
   labels: Array<{
     text: string;
     position: Point2D;

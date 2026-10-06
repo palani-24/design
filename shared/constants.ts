@@ -786,3 +786,692 @@ export function createChinoTrouser(): Garment {
   };
 }
 
+export function createWomensBootCutPant(): Garment {
+  // 1. BK: Back Leg (Boot Cut silhouette with back knee reduction and hem flare)
+  const backLeg: PatternComponent = {
+    id: 'pant-bk',
+    pieceCode: 'BK',
+    name: 'BK - Back Leg (1. 2)',
+    cutInstruction: 'Cut 2 (Pair) • Self Fabric',
+    quantity: 2,
+    offset: { x: 60, y: 50 },
+    grainline: {
+      start: { x: 420, y: 260 },
+      end: { x: 780, y: 260 },
+      label: 'GRAINLINE ↔ LENGTH',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 50, y: 70, name: 'Back Crotch Waist Apex' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 50, y: 380, name: 'Back Waist Side Apex' }],
+      },
+      {
+        type: 'C',
+        zone: 'hip',
+        points: [
+          { x: 120, y: 400, isControl: true },
+          { x: 260, y: 405, isControl: true },
+          { x: 380, y: 395, name: 'Side Hip Curve Apex' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 520, y: 385, isControl: true },
+          { x: 680, y: 375, isControl: true },
+          { x: 740, y: 380, name: 'Knee Outseam Curve' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 800, y: 385, isControl: true },
+          { x: 920, y: 398, isControl: true },
+          { x: 980, y: 410, name: 'Boot Cut Outseam Flare' },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 980, y: 150, name: 'Boot Cut Inseam Flare' }],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 920, y: 162, isControl: true },
+          { x: 800, y: 175, isControl: true },
+          { x: 740, y: 180, name: 'Knee Inseam Curve' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hip',
+        points: [
+          { x: 580, y: 188, isControl: true },
+          { x: 400, y: 195, isControl: true },
+          { x: 280, y: 190, name: 'Back Crotch Fork Curve' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'bust',
+        points: [
+          { x: 210, y: 140, isControl: true },
+          { x: 140, y: 95, isControl: true },
+          { x: 50, y: 70, name: 'Back Crotch Rise Curve' },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 50, y: 70 }],
+      },
+    ],
+    notches: [
+      { x: 740, y: 380, name: 'Knee Notch Outseam', isNotch: true },
+      { x: 740, y: 180, name: 'Knee Notch Inseam', isNotch: true },
+      { x: 280, y: 190, name: 'Crotch Seam Notch', isNotch: true },
+    ],
+    internals: [
+      {
+        id: 'back-pocket-placement-contour',
+        name: 'Pocket Placement Guide',
+        type: 'pocket',
+        color: '#facc15', // Yellow line as shown in TUKAcad screenshot
+        closed: true,
+        points: [
+          { x: 90, y: 160 },
+          { x: 90, y: 310 },
+          { x: 195, y: 320 },
+          { x: 235, y: 235 },
+          { x: 195, y: 150 },
+        ],
+      },
+    ],
+    labels: [
+      { text: 'WOMENS BOOT CUT PANT - BACK (BK)', position: { x: 340, y: 300 }, type: 'title' },
+      { text: 'Cut 2 • Size S (28" Waist) • Inseam 32"', position: { x: 340, y: 320 }, type: 'meta' },
+      { text: 'KNEE LEVEL: 18.5" (47cm)', position: { x: 700, y: 280 }, type: 'guide' },
+      { text: 'BOOT CUT FLARE: 21.0" (53.3cm)', position: { x: 920, y: 280 }, type: 'guide' },
+    ],
+    measurements: {
+      waist: 71.0,
+      hip: 94.0,
+      length: 106.0,
+      inseam: 81.3,
+      hemWidth: 26.5,
+    },
+  };
+
+  // 2. BK-PK: Back Pocket with Butterfly Embroidery Art (exactly as in screenshot)
+  const backPocket: PatternComponent = {
+    id: 'pant-bk-pk',
+    pieceCode: 'BK-PK',
+    name: 'BK-PK - Back Pocket (6. 2)',
+    cutInstruction: 'Cut 2 (Pair) • Butterfly Embroidery',
+    quantity: 2,
+    offset: { x: 480, y: 440 },
+    grainline: {
+      start: { x: 80, y: 30 },
+      end: { x: 80, y: 160 },
+      label: 'GRAINLINE ↕ POCKET',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 15, y: 20, name: 'Top Pocket Left' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 155, y: 20, name: 'Top Pocket Right' }],
+      },
+      {
+        type: 'L',
+        zone: 'hip',
+        points: [{ x: 165, y: 135, name: 'Pocket Right Side' }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 85, y: 185, name: 'Pocket Bottom Apex' }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 5, y: 135, name: 'Pocket Left Side' }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 15, y: 20 }],
+      },
+    ],
+    notches: [
+      { x: 15, y: 35, name: 'Hem Fold Notch Left', isNotch: true },
+      { x: 155, y: 35, name: 'Hem Fold Notch Right', isNotch: true },
+    ],
+    internals: [
+      {
+        id: 'butterfly-artwork',
+        name: 'TUKA Butterfly Graphic Placement',
+        type: 'graphic',
+        color: '#2563eb',
+        points: [
+          { x: 25, y: 45 },
+          { x: 145, y: 45 },
+          { x: 145, y: 140 },
+          { x: 25, y: 140 },
+        ],
+        graphicSvg: 'butterfly',
+      },
+    ],
+    labels: [
+      { text: 'BK-PK (6. 2)', position: { x: 45, y: 32 }, type: 'title' },
+      { text: 'Pocket Top 14.0cm • Length 16.5cm', position: { x: 20, y: 175 }, type: 'meta' },
+    ],
+    measurements: {
+      length: 16.5,
+      hemWidth: 14.0,
+    },
+  };
+
+  // 3. FR: Front Leg
+  const frontLeg: PatternComponent = {
+    id: 'pant-fr',
+    pieceCode: 'FR',
+    name: 'FR - Front Leg (7. 2)',
+    cutInstruction: 'Cut 2 (Pair) • Curve Pocket Cutout',
+    quantity: 2,
+    offset: { x: 60, y: 550 },
+    grainline: {
+      start: { x: 420, y: 220 },
+      end: { x: 780, y: 220 },
+      label: 'GRAINLINE ↔ LENGTH',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 50, y: 100, name: 'Front Fly Top' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 50, y: 320, name: 'Front Waist Side' }],
+      },
+      {
+        type: 'C',
+        zone: 'hip',
+        points: [
+          { x: 110, y: 350, isControl: true },
+          { x: 250, y: 360, isControl: true },
+          { x: 380, y: 350, name: 'Front Hip Curve' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 520, y: 340, isControl: true },
+          { x: 680, y: 330, isControl: true },
+          { x: 740, y: 335, name: 'Front Knee Outseam' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 800, y: 340, isControl: true },
+          { x: 920, y: 355, isControl: true },
+          { x: 980, y: 370, name: 'Front Boot Cut Outseam' },
+        ],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 980, y: 150, name: 'Front Boot Cut Inseam' }],
+      },
+      {
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: 920, y: 158, isControl: true },
+          { x: 800, y: 168, isControl: true },
+          { x: 740, y: 172, name: 'Front Knee Inseam' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'hip',
+        points: [
+          { x: 580, y: 176, isControl: true },
+          { x: 400, y: 180, isControl: true },
+          { x: 260, y: 178, name: 'Front Crotch Fork' },
+        ],
+      },
+      {
+        type: 'C',
+        zone: 'bust',
+        points: [
+          { x: 180, y: 120, isControl: true },
+          { x: 100, y: 105, isControl: true },
+          { x: 50, y: 100, name: 'Front Fly Curve' },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 50, y: 100 }],
+      },
+    ],
+    notches: [
+      { x: 740, y: 335, name: 'Front Knee Notch', isNotch: true },
+      { x: 740, y: 172, name: 'Front Knee Inseam Notch', isNotch: true },
+    ],
+    labels: [
+      { text: 'WOMENS BOOT CUT PANT - FRONT (FR)', position: { x: 340, y: 260 }, type: 'title' },
+      { text: 'Cut 2 • Inseam 32" • Slanted Pocket Scoop', position: { x: 340, y: 280 }, type: 'meta' },
+    ],
+    measurements: {
+      waist: 71.0,
+      hip: 94.0,
+      length: 104.0,
+      inseam: 81.3,
+      hemWidth: 26.5,
+    },
+  };
+
+  // 4. WB: Waistband
+  const waistband: PatternComponent = {
+    id: 'pant-wb',
+    pieceCode: 'WB',
+    name: 'WB - Waistband (8. 1)',
+    cutInstruction: 'Cut 1 on Fold • Interfaced',
+    quantity: 1,
+    offset: { x: 1100, y: 50 },
+    grainline: {
+      start: { x: 20, y: 40 },
+      end: { x: 320, y: 40 },
+      label: 'GRAINLINE ↔ WAISTBAND',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 10, name: 'WB Center Back' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 350, y: 10, name: 'WB Front Extension' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 350, y: 70, name: 'WB Front Bottom' }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 70, name: 'WB Center Back Bottom' }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 10 }],
+      },
+    ],
+    notches: [
+      { x: 175, y: 10, name: 'Side Seam Notch', isNotch: true },
+      { x: 320, y: 10, name: 'Center Front Notch', isNotch: true },
+    ],
+    labels: [
+      { text: 'WB (8. 1)', position: { x: 80, y: 45 }, type: 'title' },
+      { text: 'Contour Waistband 4.5cm', position: { x: 80, y: 60 }, type: 'meta' },
+    ],
+    measurements: {
+      waist: 71.0,
+    },
+  };
+
+  // 5. COIN: Coin Pocket
+  const coinPocket: PatternComponent = {
+    id: 'pant-coin',
+    pieceCode: 'COIN',
+    name: 'COIN - Coin Pocket (5. 1)',
+    cutInstruction: 'Cut 1 • Right Front Watch Pocket',
+    quantity: 1,
+    offset: { x: 1100, y: 180 },
+    grainline: {
+      start: { x: 10, y: 40 },
+      end: { x: 80, y: 40 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 90, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 90, y: 85 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 85 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'COIN (5. 1)', position: { x: 15, y: 45 }, type: 'title' },
+    ],
+    measurements: {
+      length: 8.5,
+      hemWidth: 9.0,
+    },
+  };
+
+  // 6. BUT-FLY: Button Fly Facing
+  const buttonFly: PatternComponent = {
+    id: 'pant-but-fly',
+    pieceCode: 'BUT-FLY',
+    name: 'BUT-FLY - Button Fly (4. 1)',
+    cutInstruction: 'Cut 1 • Button Stand',
+    quantity: 1,
+    offset: { x: 1100, y: 310 },
+    grainline: {
+      start: { x: 15, y: 20 },
+      end: { x: 15, y: 130 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 60, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 60, y: 120 }],
+      },
+      {
+        type: 'C',
+        zone: 'waist',
+        points: [
+          { x: 50, y: 150, isControl: true },
+          { x: 20, y: 160, isControl: true },
+          { x: 0, y: 155, name: 'Fly Curve Bottom' },
+        ],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'BUT-FLY (4. 1)', position: { x: 10, y: 70 }, type: 'title' },
+    ],
+    measurements: {
+      length: 15.5,
+      hemWidth: 6.0,
+    },
+  };
+
+  // 7. BIA-PK: Bias Pocket Facing
+  const biasPocket: PatternComponent = {
+    id: 'pant-bia-pk',
+    pieceCode: 'BIA-PK',
+    name: 'BIA-PK - Bias Pocket (2. 1)',
+    cutInstruction: 'Cut 2 Facing',
+    quantity: 2,
+    offset: { x: 1100, y: 520 },
+    grainline: {
+      start: { x: 20, y: 15 },
+      end: { x: 120, y: 65 },
+      label: 'BIAS 45°',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 140, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 140, y: 70 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 70 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'BIA-PK (2. 1)', position: { x: 25, y: 40 }, type: 'title' },
+    ],
+    measurements: {
+      length: 7.0,
+      hemWidth: 14.0,
+    },
+  };
+
+  // 8. BIA-BTTM: Bias Bottom Hem Facing
+  const biasBottom: PatternComponent = {
+    id: 'pant-bia-bttm',
+    pieceCode: 'BIA-BTTM',
+    name: 'BIA-BTTM - Bias Bottom (3. 1)',
+    cutInstruction: 'Cut 2 Hem Reinforcement',
+    quantity: 2,
+    offset: { x: 1100, y: 640 },
+    grainline: {
+      start: { x: 10, y: 20 },
+      end: { x: 150, y: 20 },
+      label: 'BIAS ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'hem',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 180, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 180, y: 40 }],
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 40 }],
+      },
+      {
+        type: 'Z',
+        zone: 'hem',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'BIA-BTTM (3. 1)', position: { x: 30, y: 25 }, type: 'title' },
+    ],
+    measurements: {
+      length: 4.0,
+      hemWidth: 18.0,
+    },
+  };
+
+  // 9. R-LOOP: Right Belt Loop
+  const beltLoop: PatternComponent = {
+    id: 'pant-r-loop',
+    pieceCode: 'R-LOOP',
+    name: 'R-LOOP - Belt Loop (9. 1)',
+    cutInstruction: 'Cut 5 Loops',
+    quantity: 5,
+    offset: { x: 1100, y: 730 },
+    grainline: {
+      start: { x: 10, y: 15 },
+      end: { x: 100, y: 15 },
+      label: 'GRAINLINE ↔',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 120, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 120, y: 30 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 30 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'R-LOOP (9. 1)', position: { x: 20, y: 20 }, type: 'title' },
+    ],
+    measurements: {
+      length: 3.0,
+      hemWidth: 12.0,
+    },
+  };
+
+  // 10. R-FY: Right Fly Facing
+  const rightFly: PatternComponent = {
+    id: 'pant-r-fy',
+    pieceCode: 'R-FY',
+    name: 'R-FY - Right Fly (10. 1)',
+    cutInstruction: 'Cut 1 Fly Shield',
+    quantity: 1,
+    offset: { x: 1100, y: 800 },
+    grainline: {
+      start: { x: 15, y: 15 },
+      end: { x: 15, y: 110 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 55, y: 0 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 55, y: 120 }],
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 0, y: 120 }],
+      },
+      {
+        type: 'Z',
+        zone: 'waist',
+        points: [{ x: 0, y: 0 }],
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'R-FY (10. 1)', position: { x: 10, y: 60 }, type: 'title' },
+    ],
+    measurements: {
+      length: 12.0,
+      hemWidth: 5.5,
+    },
+  };
+
+  return {
+    id: 'garment-bootcut-pant-005',
+    name: 'Womens Boot Cut Pant',
+    category: 'trouser',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [
+      backLeg,
+      biasPocket,
+      biasBottom,
+      buttonFly,
+      coinPocket,
+      backPocket,
+      frontLeg,
+      waistband,
+      beltLoop,
+      rightFly,
+    ],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+

@@ -15,6 +15,13 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
     moveEntireGarment,
     setSelectedComponent,
     handleMeasureClick,
+    cadTheme,
+    showSeamAllowance,
+    seamAllowanceWidthMm,
+    showInternals,
+    showGrainlines,
+    showNotches,
+    showPointLabels,
   } = useCADStore();
 
   const [isDraggingGarment, setIsDraggingGarment] = useState(false);
@@ -22,6 +29,8 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
 
   const bounds = calculateGarmentBounds(garment);
   const isEntireSelected = selectedComponentId === 'entire' || selectedComponentId === null;
+  const isTukaDark = cadTheme === 'tukacad-black';
+  const isBlueprint = cadTheme === 'blueprint-light';
 
   // Garment drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -47,6 +56,9 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
     setDragStart(null);
   };
 
+  const primaryStroke = isTukaDark ? '#00ff44' : isBlueprint ? '#1d4ed8' : '#2563eb';
+  const selectedStroke = isTukaDark ? '#f97316' : '#2563eb';
+
   return (
     <g
       id="garment-vector-root"
@@ -67,8 +79,8 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
             y={bounds.minY}
             width={bounds.width}
             height={bounds.height}
-            fill="rgba(37, 99, 235, 0.02)"
-            stroke="#2563eb"
+            fill={isTukaDark ? 'rgba(249, 115, 22, 0.03)' : 'rgba(37, 99, 235, 0.02)'}
+            stroke={isTukaDark ? '#f97316' : '#2563eb'}
             strokeWidth="1.2"
             strokeDasharray="6 4"
             rx="4"
@@ -77,9 +89,9 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
           {/* Top Bounding Badge */}
           <g transform={`translate(${bounds.minX + 8}, ${bounds.minY - 24})`}>
             <rect
-              width="360"
+              width="380"
               height="20"
-              fill="#2563eb"
+              fill={isTukaDark ? '#f97316' : '#2563eb'}
               rx="3"
             />
             <text
@@ -111,16 +123,34 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
               y={handle.y - 3.5}
               width="7"
               height="7"
-              fill="#ffffff"
-              stroke="#2563eb"
+              fill={isTukaDark ? '#f97316' : '#ffffff'}
+              stroke={isTukaDark ? '#ffffff' : '#2563eb'}
               strokeWidth="1.5"
             />
           ))}
         </g>
       )}
 
+      {/* TUKAcad Centerline Crosshairs (Dashed axis through pattern) */}
+      <g id="tuka-cad-crosshairs" stroke={isTukaDark ? '#ffffff' : '#64748b'} strokeDasharray="6 4" strokeWidth="0.9" opacity={isTukaDark ? 0.75 : 0.4}>
+        {/* Horizontal Crease Axis */}
+        <line
+          x1={bounds.minX - 50}
+          y1={bounds.minY + bounds.height * 0.42}
+          x2={bounds.maxX + 50}
+          y2={bounds.minY + bounds.height * 0.42}
+        />
+        {/* Vertical Center Axis */}
+        <line
+          x1={bounds.minX + bounds.width * 0.48}
+          y1={bounds.minY - 50}
+          x2={bounds.minX + bounds.width * 0.48}
+          y2={bounds.maxY + 50}
+        />
+      </g>
+
       {/* Guide lines connecting Front, Back and Sleeve across horizontal levels */}
-      <g id="horizontal-cad-guides" stroke="#94a3b8" strokeDasharray="3 3" strokeWidth="0.8" opacity="0.65">
+      <g id="horizontal-cad-guides" stroke={isTukaDark ? '#475569' : '#94a3b8'} strokeDasharray="3 3" strokeWidth="0.8" opacity="0.6">
         {/* Bust Level alignment guide */}
         <line
           x1={bounds.minX + 30}
@@ -163,54 +193,126 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
               }
             }}
           >
-            {/* Pattern Geometry Path */}
+            {/* Seam Allowance (SA) Offset Outline */}
+            {showSeamAllowance && (
+              <path
+                d={pathData}
+                fill="none"
+                stroke={isTukaDark ? '#38bdf8' : '#60a5fa'}
+                strokeWidth="1.2"
+                strokeDasharray="4 3"
+                opacity="0.8"
+              />
+            )}
+
+            {/* Main Pattern Geometry Path */}
             <path
               d={pathData}
-              fill={isSelected ? 'rgba(37, 99, 235, 0.05)' : '#ffffff'}
-              stroke={
+              fill={
                 isSelected
-                  ? '#2563eb'
-                  : component.id === 'front'
-                  ? '#1d4ed8'
-                  : component.id === 'back'
-                  ? '#0284c7'
-                  : '#4338ca'
+                  ? isTukaDark
+                    ? 'rgba(249, 115, 22, 0.12)'
+                    : 'rgba(37, 99, 235, 0.05)'
+                  : isTukaDark
+                  ? 'rgba(0, 0, 0, 0.6)'
+                  : '#ffffff'
               }
-              strokeWidth={isSelected ? '2.2' : '1.8'}
+              stroke={isSelected ? selectedStroke : primaryStroke}
+              strokeWidth={isSelected ? '2.5' : '1.8'}
               strokeLinejoin="round"
               strokeLinecap="round"
               className="transition-colors cursor-pointer"
             />
 
+            {/* Internal Contours & Pocket Placements (TUKAcad Signature) */}
+            {showInternals &&
+              component.internals?.map((internal) => {
+                if (internal.type === 'graphic' && internal.graphicSvg === 'butterfly') {
+                  const p0 = internal.points[0];
+                  const p2 = internal.points[2] || { x: p0.x + 120, y: p0.y + 95 };
+                  const w = p2.x - p0.x;
+                  const h = p2.y - p0.y;
+
+                  return (
+                    <g key={internal.id} transform={`translate(${p0.x}, ${p0.y})`}>
+                      {/* Translucent placement frame with dashed border */}
+                      <rect
+                        width={w}
+                        height={h}
+                        fill="rgba(255, 255, 255, 0.95)"
+                        stroke="#3b82f6"
+                        strokeWidth="1.2"
+                        strokeDasharray="4 2"
+                        rx="2"
+                      />
+                      {/* Butterfly Line Artwork (Authentic to TUKAcad screenshot) */}
+                      <g transform="translate(14, 10) scale(0.9)">
+                        <path d="M50 30 Q50 80 50 85 M48 25 Q50 30 52 25" stroke="#1d4ed8" strokeWidth="2.8" fill="none" />
+                        <path d="M50 35 C35 15 10 20 15 45 C18 60 40 60 50 55" stroke="#2563eb" strokeWidth="2" fill="rgba(37,99,235,0.15)" />
+                        <path d="M50 35 C65 15 90 20 85 45 C82 60 60 60 50 55" stroke="#2563eb" strokeWidth="2" fill="rgba(37,99,235,0.15)" />
+                        <path d="M50 55 C38 58 20 65 25 80 C29 90 45 80 50 68" stroke="#1d4ed8" strokeWidth="2" fill="rgba(37,99,235,0.1)" />
+                        <path d="M50 55 C62 58 80 65 75 80 C71 90 55 80 50 68" stroke="#1d4ed8" strokeWidth="2" fill="rgba(37,99,235,0.1)" />
+                        <circle cx="50" cy="30" r="3" fill="#1d4ed8" />
+                        <path d="M48 27 Q40 18 35 20 M52 27 Q60 18 65 20" stroke="#1e40af" strokeWidth="1.6" fill="none" />
+                      </g>
+                      {/* Transform Corner Handles */}
+                      <rect x="-3" y="-3" width="6" height="6" fill="#facc15" stroke="#000" strokeWidth="0.8" />
+                      <rect x={w - 3} y="-3" width="6" height="6" fill="#facc15" stroke="#000" strokeWidth="0.8" />
+                      <rect x="-3" y={h - 3} width="6" height="6" fill="#facc15" stroke="#000" strokeWidth="0.8" />
+                      <rect x={w - 3} y={h - 3} width="6" height="6" fill="#facc15" stroke="#000" strokeWidth="0.8" />
+                    </g>
+                  );
+                }
+
+                // Yellow Pocket Placement Contour (As seen on Pant Back in screenshot)
+                const ptsString = internal.points.map((p) => `${p.x},${p.y}`).join(' ');
+                return (
+                  <g key={internal.id}>
+                    <polygon
+                      points={ptsString}
+                      fill="none"
+                      stroke={internal.color || '#facc15'}
+                      strokeWidth="1.8"
+                    />
+                    {internal.points.map((pt, pIdx) => (
+                      <circle
+                        key={pIdx}
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="3"
+                        fill="#facc15"
+                        stroke="#000000"
+                        strokeWidth="1"
+                      />
+                    ))}
+                  </g>
+                );
+              })}
+
             {/* Grainline */}
-            {component.grainline && (
+            {showGrainlines && component.grainline && (
               <g className="select-none">
                 <line
                   x1={component.grainline.start.x}
                   y1={component.grainline.start.y}
                   x2={component.grainline.end.x}
                   y2={component.grainline.end.y}
-                  stroke="#334155"
-                  strokeWidth="1.2"
-                  strokeDasharray="8 4"
+                  stroke={isTukaDark ? '#00ff44' : '#334155'}
+                  strokeWidth="1.4"
+                  strokeDasharray={isTukaDark ? 'none' : '8 4'}
                 />
-                {/* Arrow heads on grainline */}
+                {/* Arrow head on grainline */}
                 <polygon
-                  points={`${component.grainline.start.x},${component.grainline.start.y} ${component.grainline.start.x - 3},${component.grainline.start.y + 8} ${component.grainline.start.x + 3},${component.grainline.start.y + 8}`}
-                  fill="#334155"
-                />
-                <polygon
-                  points={`${component.grainline.end.x},${component.grainline.end.y} ${component.grainline.end.x - 3},${component.grainline.end.y - 8} ${component.grainline.end.x + 3},${component.grainline.end.y - 8}`}
-                  fill="#334155"
+                  points={`${component.grainline.end.x},${component.grainline.end.y} ${component.grainline.end.x - 12},${component.grainline.end.y - 5} ${component.grainline.end.x - 12},${component.grainline.end.y + 5}`}
+                  fill={isTukaDark ? '#00ff44' : '#334155'}
                 />
                 <text
                   x={component.grainline.start.x + 10}
                   y={(component.grainline.start.y + component.grainline.end.y) / 2}
-                  fill="#475569"
+                  fill={isTukaDark ? '#00ff44' : '#475569'}
                   fontSize="9"
                   fontFamily="monospace"
                   fontWeight="600"
-                  transform={`rotate(-90, ${component.grainline.start.x + 10}, ${(component.grainline.start.y + component.grainline.end.y) / 2})`}
                 >
                   {component.grainline.label}
                 </text>
@@ -255,9 +357,9 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
                       cy={pt.y}
                       r="2.5"
                       fill="#ffffff"
-                      stroke="#f97316"
+                      stroke={isTukaDark ? '#facc15' : '#f97316'}
                       strokeWidth="1.2"
-                      className="opacity-70 hover:opacity-100 cursor-pointer"
+                      className="opacity-80 hover:opacity-100 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMeasureClick({ x: compX + pt.x, y: compY + pt.y });
@@ -271,8 +373,8 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
                     cx={pt.x}
                     cy={pt.y}
                     r="3.5"
-                    fill={isSelected ? '#2563eb' : '#ffffff'}
-                    stroke="#1e293b"
+                    fill={isSelected ? (isTukaDark ? '#f97316' : '#2563eb') : isTukaDark ? '#00ff44' : '#ffffff'}
+                    stroke={isTukaDark ? '#000000' : '#1e293b'}
                     strokeWidth="1.5"
                     className="hover:scale-125 transition-transform cursor-pointer"
                     onClick={(e) => {
@@ -295,7 +397,19 @@ export const GarmentVectorSVG: React.FC<GarmentVectorSVGProps> = ({ onPointClick
                   key={idx}
                   x={lbl.position.x}
                   y={lbl.position.y}
-                  fill={isTitle ? '#0f172a' : isGuide ? '#2563eb' : '#64748b'}
+                  fill={
+                    isTukaDark
+                      ? isTitle
+                        ? '#ffffff'
+                        : isGuide
+                        ? '#38bdf8'
+                        : '#94a3b8'
+                      : isTitle
+                      ? '#0f172a'
+                      : isGuide
+                      ? '#2563eb'
+                      : '#64748b'
+                  }
                   fontSize={isTitle ? '14' : isGuide ? '9' : '10'}
                   fontFamily="monospace"
                   fontWeight={isTitle ? 'bold' : isGuide ? '600' : 'normal'}

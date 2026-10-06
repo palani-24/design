@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TopToolbar } from './components/TopToolbar';
+import { TukaMenuBar } from './components/TukaMenuBar';
 import { LeftPanel } from './components/LeftPanel';
 import { PatternWorkspace } from './components/PatternWorkspace';
 import { RightGradingPanel } from './components/RightGradingPanel';
@@ -13,7 +13,12 @@ import { DatabaseConnectModal } from './components/modals/DatabaseConnectModal';
 import { NestingModal } from './components/modals/NestingModal';
 import { TechPackModal } from './components/modals/TechPackModal';
 import { LibraryModal } from './components/modals/LibraryModal';
+import { WalkSeamModal } from './components/modals/WalkSeamModal';
+import { EFitPreviewModal } from './components/modals/EFitPreviewModal';
+import { SeamAllowanceModal } from './components/modals/SeamAllowanceModal';
+import { DartPleatModal } from './components/modals/DartPleatModal';
 import { useCADStore } from './store/useCADStore';
+
 
 export const App: React.FC = () => {
   const { undo, redo, setActiveModal, setTool } = useCADStore();
@@ -62,8 +67,8 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-900 select-none">
-      {/* Top Application Toolbar */}
-      <TopToolbar />
+      {/* Top Application Toolbar & TUKA Windows Menu */}
+      <TukaMenuBar />
 
       {/* Main CAD 3-Pane Viewport */}
       <main className="flex-1 flex overflow-hidden">
@@ -88,6 +93,10 @@ export const App: React.FC = () => {
       <NestingModal />
       <TechPackModal />
       <LibraryModal />
+      <WalkSeamModal />
+      <EFitPreviewModal />
+      <SeamAllowanceModal />
+      <DartPleatModal />
     </div>
   );
 };

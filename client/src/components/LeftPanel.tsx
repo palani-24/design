@@ -155,28 +155,49 @@ export const LeftPanel: React.FC = () => {
           >
             <div className="flex items-center gap-1.5">
               {trousersExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
-              <span>Trousers (1)</span>
+              <span>Pants & Trousers (2)</span>
             </div>
             <span className="text-[10px] text-slate-400">{isTrouserActive ? 'Active' : 'Base'}</span>
           </button>
           {trousersExpanded && (
             <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
+              {/* Womens Boot Cut Pant (TUKA Benchmark from reference image) */}
               <div
                 className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
-                  isTrouserActive
+                  garment.id.includes('bootcut')
+                    ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('bootcut-pant')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${garment.id.includes('bootcut') ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span className="text-xs">Womens Boot Cut Pant</span>
+                </div>
+                <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  garment.id.includes('bootcut') ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {garment.id.includes('bootcut') ? 'ACTIVE' : 'tud v4.8'}
+                </span>
+              </div>
+
+              {/* Chino Trouser */}
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  garment.id === 'garment-trouser-004'
                     ? 'bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
                 onClick={() => loadGarmentTemplate('trouser')}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isTrouserActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span className={`w-2 h-2 rounded-full ${garment.id === 'garment-trouser-004' ? 'bg-blue-600' : 'bg-slate-300'}`} />
                   <span>Chino Trouser</span>
                 </div>
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                  isTrouserActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                  garment.id === 'garment-trouser-004' ? 'bg-blue-600 text-white' : 'text-slate-400'
                 }`}>
-                  {isTrouserActive ? 'ACTIVE' : 'v1.0'}
+                  {garment.id === 'garment-trouser-004' ? 'ACTIVE' : 'v1.0'}
                 </span>
               </div>
             </div>
