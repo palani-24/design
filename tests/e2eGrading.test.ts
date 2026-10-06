@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useCADStore } from '../client/src/store/useCADStore';
 import { calculateGarmentBounds } from '../shared/gradingEngine';
 
+import { PatternComponent, MetricComparison } from '../shared/types';
+
 describe('End-to-End Workflow: Basic T-Shirt S → M Grading', () => {
   beforeEach(() => {
     useCADStore.getState().createNewProject('E2E Basic T-Shirt Grading Session');
@@ -17,9 +19,9 @@ describe('End-to-End Workflow: Basic T-Shirt S → M Grading', () => {
     expect(store.garment.components).toHaveLength(3);
 
     // Capture initial S state for Front, Back, and Sleeve
-    const frontS = store.garment.components.find((c) => c.id === 'front')!;
-    const backS = store.garment.components.find((c) => c.id === 'back')!;
-    const sleeveS = store.garment.components.find((c) => c.id === 'sleeve')!;
+    const frontS = store.garment.components.find((c: PatternComponent) => c.id === 'front')!;
+    const backS = store.garment.components.find((c: PatternComponent) => c.id === 'back')!;
+    const sleeveS = store.garment.components.find((c: PatternComponent) => c.id === 'sleeve')!;
 
     const initialBounds = calculateGarmentBounds(store.garment);
 
@@ -54,9 +56,9 @@ describe('End-to-End Workflow: Basic T-Shirt S → M Grading', () => {
     expect(stateAfterGrade.currentSize).toBe('M');
 
     // 6. Verify Front, Back, and Sleeve ALL changed together automatically!
-    const frontM = stateAfterGrade.garment.components.find((c) => c.id === 'front')!;
-    const backM = stateAfterGrade.garment.components.find((c) => c.id === 'back')!;
-    const sleeveM = stateAfterGrade.garment.components.find((c) => c.id === 'sleeve')!;
+    const frontM = stateAfterGrade.garment.components.find((c: PatternComponent) => c.id === 'front')!;
+    const backM = stateAfterGrade.garment.components.find((c: PatternComponent) => c.id === 'back')!;
+    const sleeveM = stateAfterGrade.garment.components.find((c: PatternComponent) => c.id === 'sleeve')!;
 
     // Front checks
     expect(frontM.measurements.halfChest).toBe(50.0); // +2.0 cm half-chest
@@ -80,12 +82,12 @@ describe('End-to-End Workflow: Basic T-Shirt S → M Grading', () => {
     expect(sleeveM.offset.x).toBeGreaterThan(backM.offset.x + 250);
 
     // 9. Verify dimensional metrics comparison returned accurately
-    const bustMetric = gradingResult.metricsComparison.find((m) => m.label === 'Total Bust Circumference');
+    const bustMetric = gradingResult.metricsComparison.find((m: MetricComparison) => m.label === 'Total Bust Circumference');
     expect(bustMetric?.beforeCm).toBe(92.0);
     expect(bustMetric?.afterCm).toBe(96.0);
     expect(bustMetric?.deltaCm).toBe(4.0);
 
-    const lengthMetric = gradingResult.metricsComparison.find((m) => m.label === 'Center Back Body Length');
+    const lengthMetric = gradingResult.metricsComparison.find((m: MetricComparison) => m.label === 'Center Back Body Length');
     expect(lengthMetric?.beforeCm).toBe(66.0);
     expect(lengthMetric?.afterCm).toBe(68.0);
     expect(lengthMetric?.deltaCm).toBe(2.0);

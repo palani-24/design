@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*", "client/src/shared/*"],
+      "@/*": ["client/src/*"]
+    }
+  },
+  "include": ["shared/**/*", "tests/**/*"],
+  "exclude": ["node_modules"]
+}
