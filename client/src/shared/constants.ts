@@ -1314,26 +1314,177 @@ export function createChinoTrouser(): Garment {
     ],
     labels: [
       { text: 'WAISTBAND', position: { x: 60, y: 45 }, type: 'title' },
-      { text: 'Curved Waist Band 4.0cm height', position: { x: 60, y: 58 }, type: 'meta' },
+      { text: 'Curved Waist Band 4.5cm height', position: { x: 60, y: 58 }, type: 'meta' },
     ],
     measurements: {
       waist: 84.0,
     },
   };
 
+  // 4. FLY SHIELD (CUT 1)
+  const flyShield: PatternComponent = {
+    id: 'trouser-fly-shield',
+    pieceCode: 'FSD',
+    name: 'FLY SHIELD (CUT 1)',
+    cutInstruction: 'Cut 1 (Underlap Fly Guard)',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 720, y: 200 },
+    grainline: { start: { x: 30, y: 20 }, end: { x: 30, y: 160 }, label: 'GRAINLINE ↕' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 60, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 60, y: 160 }] },
+      { type: 'C', zone: 'waist', points: [{ x: 60, y: 200, isControl: true }, { x: 0, y: 200, isControl: true }, { x: 0, y: 180 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [{ x: 60, y: 40, name: 'Zipper Stop Notch', isNotch: true }],
+    labels: [{ text: 'FLY SHIELD (CUT 1)', position: { x: 8, y: 90 }, type: 'title' }],
+    measurements: { length: 20.0 },
+  };
+
+  // 5. FLY FACING (CUT 1)
+  const flyFacing: PatternComponent = {
+    id: 'trouser-fly-facing',
+    pieceCode: 'FFC',
+    name: 'FLY FACING (CUT 1)',
+    cutInstruction: 'Cut 1 (Bearer Facing)',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 820, y: 200 },
+    grainline: { start: { x: 25, y: 20 }, end: { x: 25, y: 150 }, label: 'GRAINLINE ↕' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 55, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 55, y: 150 }] },
+      { type: 'C', zone: 'waist', points: [{ x: 55, y: 190, isControl: true }, { x: 0, y: 190, isControl: true }, { x: 0, y: 170 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [],
+    labels: [{ text: 'FLY FACING (CUT 1)', position: { x: 6, y: 90 }, type: 'title' }],
+    measurements: { length: 19.0 },
+  };
+
+  // 6. FRONT SLANT POCKET FACING (CUT 2)
+  const slantFacing: PatternComponent = {
+    id: 'trouser-slant-facing',
+    pieceCode: 'SPF',
+    name: 'SLANT FACING (CUT 2)',
+    cutInstruction: 'Cut 2 (Pair)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 920, y: 200 },
+    grainline: { start: { x: 50, y: 20 }, end: { x: 50, y: 150 }, label: 'GRAINLINE ↕' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 120, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 120, y: 180 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 0, y: 180 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [{ x: 0, y: 40, name: 'Pocket Opening Notch', isNotch: true }],
+    labels: [{ text: 'SLANT FACING (CUT 2)', position: { x: 10, y: 90 }, type: 'title' }],
+    measurements: { length: 18.0 },
+  };
+
+  // 7. POCKET BAG (CUT 4)
+  const pocketBag: PatternComponent = {
+    id: 'trouser-pocket-bag',
+    pieceCode: 'PBG',
+    name: 'POCKET BAG (CUT 4)',
+    cutInstruction: 'Cut 4 (2 Pairs in Pocketing Fabric)',
+    quantity: 4,
+    seamAllowanceMm: 10,
+    offset: { x: 1080, y: 200 },
+    grainline: { start: { x: 80, y: 20 }, end: { x: 80, y: 220 }, label: 'GRAINLINE ↕' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 160, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 160, y: 220 }] },
+      { type: 'C', zone: 'waist', points: [{ x: 160, y: 270, isControl: true }, { x: 0, y: 270, isControl: true }, { x: 0, y: 220 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [],
+    labels: [{ text: 'POCKET BAG (CUT 4)', position: { x: 20, y: 120 }, type: 'title' }],
+    measurements: { length: 27.0 },
+  };
+
+  // 8. BACK WELT FACING (CUT 2)
+  const backWelt: PatternComponent = {
+    id: 'trouser-back-welt',
+    pieceCode: 'WLT',
+    name: 'WELT FACING (CUT 2)',
+    cutInstruction: 'Cut 2 (Jetted Welt Facing)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 720, y: 440 },
+    grainline: { start: { x: 20, y: 30 }, end: { x: 160, y: 30 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 180, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 180, y: 60 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 0, y: 60 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [],
+    labels: [{ text: 'WELT FACING (CUT 2)', position: { x: 30, y: 35 }, type: 'title' }],
+    measurements: { length: 18.0 },
+  };
+
+  // 9. BELT LOOPS STRIP (CUT 6)
+  const beltLoops: PatternComponent = {
+    id: 'trouser-belt-loops',
+    pieceCode: 'BLP',
+    name: 'BELT LOOPS (CUT 6)',
+    cutInstruction: 'Cut 6 Loops (or 1 Strip 60cm)',
+    quantity: 6,
+    seamAllowanceMm: 10,
+    offset: { x: 940, y: 440 },
+    grainline: { start: { x: 20, y: 15 }, end: { x: 190, y: 15 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 210, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 210, y: 35 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 0, y: 35 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [],
+    labels: [{ text: 'BELT LOOPS (CUT 6)', position: { x: 35, y: 22 }, type: 'title' }],
+    measurements: { length: 21.0 },
+  };
+
   return {
     id: 'garment-trouser-004',
-    name: 'Chino Trouser',
+    name: "Men's Tailored Trouser",
     category: 'trouser',
-    version: 'v1.0',
-    baseSize: 'S',
-    currentSize: 'S',
+    version: 'v2.0 (Master Spec)',
+    baseSize: 'M',
+    currentSize: 'M',
     position: { x: 0, y: 0 },
-    components: [frontLeg, backLeg, waistband],
-    sizeTable: DEFAULT_SIZE_TABLE,
+    components: [
+      frontLeg,
+      backLeg,
+      waistband,
+      flyShield,
+      flyFacing,
+      slantFacing,
+      pocketBag,
+      backWelt,
+      beltLoops,
+    ],
+    sizeTable: MENS_TROUSER_SIZE_TABLE,
     gradeHistory: [],
   };
 }
+
+export const MENS_TROUSER_SIZE_TABLE: SizeTable = {
+  XS:  { bust: 92.0, waist: 76.0, hip: 92.0,  length: 100.0, width: 28.0, height: 102.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+  S:   { bust: 96.0, waist: 80.0, hip: 96.0,  length: 102.0, width: 29.0, height: 104.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+  M:   { bust: 100.0, waist: 84.0, hip: 100.0, length: 104.0, width: 30.0, height: 106.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+  L:   { bust: 104.0, waist: 88.0, hip: 104.0, length: 106.0, width: 31.0, height: 108.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+  XL:  { bust: 108.0, waist: 92.0, hip: 108.0, length: 108.0, width: 32.0, height: 110.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+  XXL: { bust: 112.0, waist: 96.0, hip: 112.0, length: 110.0, width: 33.0, height: 112.0, sleeveLength: 0.0, shoulderWidth: 0.0, neckCircumference: 0.0 },
+};
 
 export function createWomensBootCutPant(): Garment {
   // 1. BK: Back Leg (Boot Cut silhouette with back knee reduction and hem flare)
