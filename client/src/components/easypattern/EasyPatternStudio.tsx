@@ -5,6 +5,9 @@ import {
   EasyPatternTool,
   GarmentSize,
   EasyGradingRuleItem,
+  Garment,
+  PatternComponent,
+  PatternPathCommand,
 } from '@shared/types';
 import {
   EASY_PATTERN_GRADING_RULES,
@@ -41,6 +44,15 @@ import {
   Maximize2,
   Bookmark,
   Shirt,
+  CheckCircle2,
+  Palette,
+  Eye,
+  Play,
+  Plus,
+  Upload,
+  Grid,
+  FileText,
+  ChevronRight,
 } from 'lucide-react';
 
 interface CustomPoint {
@@ -94,11 +106,46 @@ export const EasyPatternStudio: React.FC = () => {
     setCADEngineMode,
     setIsWorkflowModalOpen,
     loadGarmentTemplate,
+    setTukacadWorkflowStep,
   } = useCADStore();
 
   // ==========================================
-  // STEP 1 SUB-MODALS STATE
+  // STEP 1 CUSTOM PRODUCT CREATION STUDIO STATE
   // ==========================================
+  const [step1Tab, setStep1Tab] = useState<'create-studio' | 'library' | 'recent' | 'settings' | 'tutorial'>('create-studio');
+
+  // Product Identity
+  const [newProductName, setNewProductName] = useState("Women's Tailored Bodice");
+  const [newProductCategory, setNewProductCategory] = useState<'Women' | 'Men' | 'Unisex' | 'Outerwear' | 'Bottoms'>('Women');
+  const [newProductArchetype, setNewProductArchetype] = useState<
+    'basic-bodice' | 'basic-tshirt' | 'polo' | 'shirt' | 'trouser' | 'flared-skirt' | 'sheath-dress' | 'suit-jacket'
+  >('basic-bodice');
+
+  // Style Customization Options
+  const [newSilhouetteFit, setNewSilhouetteFit] = useState<'slim' | 'regular' | 'relaxed' | 'oversized'>('regular');
+  const [newNecklineStyle, setNewNecklineStyle] = useState<'crew' | 'v-neck' | 'scoop' | 'boat' | 'mandarin' | 'shirt-collar'>('crew');
+  const [newDartStyle, setNewDartStyle] = useState<'waist-bust' | 'french' | 'princess' | 'shoulder' | 'dartless'>('waist-bust');
+  const [newSleeveStyle, setNewSleeveStyle] = useState<'sleeveless' | 'cap' | 'short' | 'three-quarter' | 'long' | 'raglan'>('short');
+  const [newHemLength, setNewHemLength] = useState<'cropped' | 'waist' | 'hip' | 'tunic' | 'knee' | 'maxi'>('hip');
+  const [newHemShape, setNewHemShape] = useState<'straight' | 'shirttail' | 'asymmetric'>('straight');
+  const [newClosure, setNewClosure] = useState<'pullover' | 'button-placket' | 'invisible-zip' | 'wrap'>('pullover');
+  const [newPocket, setNewPocket] = useState<'none' | 'chest-patch' | 'inseam' | 'flap-welt'>('none');
+  const [newSeamAllowance, setNewSeamAllowance] = useState<number>(1.0);
+  const [newGrainlineOrientation, setNewGrainlineOrientation] = useState<'straight' | 'cross' | 'bias'>('straight');
+  const [newFabricType, setNewFabricType] = useState('Cotton Jersey');
+  const [newFabricColor, setNewFabricColor] = useState('#3b82f6');
+
+  // Measurements
+  const [newMeasurements, setNewMeasurements] = useState({
+    bustChest: 92.0,
+    waist: 72.0,
+    hip: 96.0,
+    shoulderWidth: 13.0,
+    backLength: 42.0,
+    armholeDepth: 22.0,
+    neckGirth: 36.0,
+  });
+
   const [activeSubModal, setActiveSubModal] = useState<
     'settings' | 'library' | 'tutorial' | 'recent' | null
   >(null);
@@ -215,6 +262,310 @@ export const EasyPatternStudio: React.FC = () => {
       const bodice = createBasicBodice();
       setGarment(bodice);
     }
+  };
+
+  // Compile custom product from scratch
+  const generateCustomGarmentProduct = (): Garment => {
+    const bustEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
+    const waistEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 3 : newSilhouetteFit === 'relaxed' ? 6 : 10;
+
+    const wChest = Math.round(((newMeasurements.bustChest + bustEase) / 4) * 10);
+    const wWaist = Math.round(((newMeasurements.waist + waistEase) / 4) * 10);
+    const wShoulder = Math.round((newMeasurements.shoulderWidth / 2) * 10 * 1.5);
+
+    let totalLen = newMeasurements.backLength * 10;
+    if (newHemLength === 'cropped') totalLen = 380;
+    else if (newHemLength === 'waist') totalLen = 450;
+    else if (newHemLength === 'hip') totalLen = 600;
+    else if (newHemLength === 'tunic') totalLen = 760;
+    else if (newHemLength === 'knee') totalLen = 980;
+    else if (newHemLength === 'maxi') totalLen = 1320;
+
+    let neckY = 95;
+    if (newNecklineStyle === 'crew') neckY = 90;
+    else if (newNecklineStyle === 'v-neck') neckY = 150;
+    else if (newNecklineStyle === 'scoop') neckY = 165;
+    else if (newNecklineStyle === 'boat') neckY = 50;
+    else if (newNecklineStyle === 'mandarin') neckY = 65;
+    else if (newNecklineStyle === 'shirt-collar') neckY = 80;
+
+    const components: PatternComponent[] = [];
+
+    // 1. Front Bodice Component
+    const frontPaths: PatternPathCommand[] = [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: neckY, name: 'Center Front Neck' }] },
+      newNecklineStyle === 'v-neck'
+        ? { type: 'L', zone: 'neck', points: [{ x: 88, y: 40, name: 'HPS Neck Point' }] }
+        : {
+            type: 'C',
+            zone: 'neck',
+            points: [
+              { x: 30, y: neckY, isControl: true },
+              { x: 75, y: 55, isControl: true },
+              { x: 88, y: 40, name: 'HPS Neck Point' },
+            ],
+            annotation: 'Front Neckline',
+          },
+      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 78, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam' },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: Math.round(wShoulder * 0.9), y: 145, isControl: true },
+          { x: Math.round(wChest * 0.92), y: 205, isControl: true },
+          { x: wChest, y: 228, name: 'Underarm Point' },
+        ],
+        annotation: 'Armhole Curve',
+      },
+    ];
+
+    if (newDartStyle === 'waist-bust') {
+      frontPaths.push(
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.98), y: 265, name: 'Side Bust Dart Top' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.62), y: 285, name: 'Bust Apex Point' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.97), y: 305, name: 'Side Bust Dart Bottom' }] },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Front Side Waist' }], annotation: 'Side Seam' },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.75), y: totalLen, name: 'Waist Dart Leg 2' }] },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.65), y: 310, name: 'Waist Dart Apex' }] },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.55), y: totalLen, name: 'Waist Dart Leg 1' }] }
+      );
+    } else if (newDartStyle === 'french') {
+      frontPaths.push(
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.98), y: Math.round(totalLen * 0.72), name: 'French Dart Top' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.58), y: 285, name: 'Bust Apex Point' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.96), y: Math.round(totalLen * 0.85), name: 'French Dart Bottom' }] },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Front Side Waist' }], annotation: 'Side Seam' }
+      );
+    } else {
+      frontPaths.push(
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Front Side Waist' }], annotation: 'Side Seam' }
+      );
+    }
+
+    if (newHemShape === 'shirttail') {
+      frontPaths.push({
+        type: 'C',
+        zone: 'hem',
+        points: [
+          { x: Math.round(wWaist * 0.7), y: totalLen + 15, isControl: true },
+          { x: Math.round(wWaist * 0.3), y: totalLen + 30, isControl: true },
+          { x: 0, y: totalLen + 25, name: 'Center Front Hem' },
+        ],
+        annotation: 'Curved Shirttail Hem',
+      });
+    } else {
+      frontPaths.push({ type: 'L', zone: 'hem', points: [{ x: 0, y: totalLen, name: 'Center Front Waist' }], annotation: 'Waistline' });
+    }
+
+    frontPaths.push({ type: 'Z', zone: 'center-fold', points: [{ x: 0, y: neckY }] });
+
+    components.push({
+      id: 'front',
+      pieceCode: 'FR-BD',
+      name: `${newProductName} (Front Piece)`,
+      cutInstruction: newClosure === 'button-placket' ? 'Cut 2 (Pair)' : 'Cut 1 on Fold',
+      quantity: 1,
+      offset: { x: 0, y: 0 },
+      grainline: {
+        start: { x: 40, y: 120 },
+        end: { x: 40, y: Math.max(160, totalLen - 40) },
+        label: newClosure === 'button-placket' ? 'GRAINLINE (CF PLACKET) ↕' : 'GRAINLINE (CF FOLD) ↕',
+      },
+      paths: frontPaths,
+      notches: [
+        { x: Math.round(wShoulder * 0.92), y: 175 },
+        { x: Math.round(wChest * 0.98), y: 265 },
+        { x: Math.round(wWaist * 0.65), y: totalLen },
+      ],
+      labels: [{ text: `${newProductName} FR`, position: { x: Math.round(wChest * 0.35), y: 220 }, type: 'title' }],
+      measurements: {
+        length: totalLen / 10,
+        halfChest: (newMeasurements.bustChest + bustEase) / 2,
+        waist: newMeasurements.waist + waistEase,
+      },
+    });
+
+    // 2. Back Bodice Component
+    const backPaths: PatternPathCommand[] = [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 45, name: 'Center Back Neck' }] },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 30, y: 45, isControl: true },
+          { x: 72, y: 42, isControl: true },
+          { x: 88, y: 40, name: 'Back HPS Neck Point' },
+        ],
+        annotation: 'Back Neckline',
+      },
+      { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.55), y: 56, name: 'Back Shoulder Dart 1' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.52), y: 130, name: 'Back Shoulder Dart Apex' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.62), y: 59, name: 'Back Shoulder Dart 2' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 74, name: 'Back Shoulder Tip' }] },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: Math.round(wShoulder * 0.92), y: 145, isControl: true },
+          { x: Math.round(wChest * 0.92), y: 205, isControl: true },
+          { x: wChest, y: 228, name: 'Back Underarm Point' },
+        ],
+      },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Back Side Waist' }] },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.72), y: totalLen, name: 'Back Waist Dart Leg 2' }] },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.62), y: 260, name: 'Back Waist Dart Apex' }] },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.52), y: totalLen, name: 'Back Waist Dart Leg 1' }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: totalLen, name: 'Center Back Waist' }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 45 }] },
+    ];
+
+    components.push({
+      id: 'back',
+      pieceCode: 'BK-BD',
+      name: `${newProductName} (Back Piece)`,
+      cutInstruction: newClosure === 'invisible-zip' ? 'Cut 2 (Pair)' : 'Cut 1 on Fold',
+      quantity: 1,
+      offset: { x: Math.round(wChest * 1.35 + 80), y: 0 },
+      grainline: {
+        start: { x: 40, y: 90 },
+        end: { x: 40, y: Math.max(140, totalLen - 40) },
+        label: newClosure === 'invisible-zip' ? 'GRAINLINE (CB ZIP) ↕' : 'GRAINLINE (CB FOLD) ↕',
+      },
+      paths: backPaths,
+      notches: [
+        { x: Math.round(wShoulder * 0.92), y: 175 },
+        { x: Math.round(wWaist * 0.62), y: totalLen },
+      ],
+      labels: [{ text: `${newProductName} BK`, position: { x: Math.round(wChest * 0.35), y: 200 }, type: 'title' }],
+      measurements: {
+        length: totalLen / 10,
+        halfChest: (newMeasurements.bustChest + bustEase) / 2,
+        waist: newMeasurements.waist + waistEase,
+      },
+    });
+
+    // 3. Sleeve Component
+    if (newSleeveStyle !== 'sleeveless') {
+      let slvLen = 230;
+      if (newSleeveStyle === 'cap') slvLen = 130;
+      else if (newSleeveStyle === 'three-quarter') slvLen = 430;
+      else if (newSleeveStyle === 'long' || newSleeveStyle === 'raglan') slvLen = 590;
+
+      const slvWidth = Math.round(wChest * 1.05);
+      const slvCrown = 145;
+
+      const sleevePaths: PatternPathCommand[] = [
+        { type: 'M', zone: 'sleeve-hem', points: [{ x: 0, y: slvLen, name: 'Underarm Hem L' }] },
+        { type: 'L', zone: 'sleeve-seam', points: [{ x: 0, y: slvCrown, name: 'Front Underarm Bicep' }] },
+        {
+          type: 'C',
+          zone: 'sleeve-cap',
+          points: [
+            { x: Math.round(slvWidth * 0.25), y: slvCrown * 0.45, isControl: true },
+            { x: Math.round(slvWidth * 0.38), y: 0, isControl: true },
+            { x: Math.round(slvWidth * 0.5), y: 0, name: 'Sleeve Cap Crown' },
+          ],
+        },
+        {
+          type: 'C',
+          zone: 'sleeve-cap',
+          points: [
+            { x: Math.round(slvWidth * 0.62), y: 0, isControl: true },
+            { x: Math.round(slvWidth * 0.75), y: slvCrown * 0.45, isControl: true },
+            { x: slvWidth, y: slvCrown, name: 'Back Underarm Bicep' },
+          ],
+        },
+        { type: 'L', zone: 'sleeve-seam', points: [{ x: slvWidth, y: slvLen, name: 'Underarm Hem R' }] },
+        { type: 'L', zone: 'sleeve-hem', points: [{ x: 0, y: slvLen, name: 'Underarm Hem L' }] },
+        { type: 'Z', zone: 'sleeve-hem', points: [{ x: 0, y: slvLen }] },
+      ];
+
+      components.push({
+        id: 'sleeve',
+        pieceCode: 'SLV',
+        name: `${newProductName} (Sleeve Pair)`,
+        cutInstruction: 'Cut 2 (Pair)',
+        quantity: 2,
+        offset: { x: Math.round((wChest * 1.35 + 80) * 2 + 50), y: 0 },
+        grainline: {
+          start: { x: Math.round(slvWidth * 0.5), y: 25 },
+          end: { x: Math.round(slvWidth * 0.5), y: slvLen - 25 },
+          label: 'GRAINLINE ↕',
+        },
+        paths: sleevePaths,
+        notches: [
+          { x: Math.round(slvWidth * 0.3), y: Math.round(slvCrown * 0.35) },
+          { x: Math.round(slvWidth * 0.7), y: Math.round(slvCrown * 0.35) },
+        ],
+        labels: [{ text: `${newProductName} SLV`, position: { x: Math.round(slvWidth * 0.35), y: Math.round(slvLen * 0.5) }, type: 'title' }],
+        measurements: {
+          sleeveLength: slvLen / 10,
+        },
+      });
+    }
+
+    // 4. Pocket Component
+    if (newPocket !== 'none') {
+      components.push({
+        id: 'pocket',
+        pieceCode: 'PKT',
+        name: 'Patch Pocket',
+        cutInstruction: 'Cut 1',
+        quantity: 1,
+        offset: { x: 40, y: Math.round(totalLen + 60) },
+        grainline: {
+          start: { x: 55, y: 15 },
+          end: { x: 55, y: 110 },
+          label: 'GRAINLINE ↕',
+        },
+        paths: [
+          { type: 'M', zone: 'hem', points: [{ x: 0, y: 0 }] },
+          { type: 'L', zone: 'hem', points: [{ x: 110, y: 0 }] },
+          { type: 'L', zone: 'hem', points: [{ x: 110, y: 110 }] },
+          { type: 'L', zone: 'hem', points: [{ x: 55, y: 135 }] },
+          { type: 'L', zone: 'hem', points: [{ x: 0, y: 110 }] },
+          { type: 'Z', zone: 'hem', points: [{ x: 0, y: 0 }] },
+        ],
+        labels: [{ text: 'PKT', position: { x: 40, y: 55 }, type: 'title' }],
+        notches: [],
+        measurements: { length: 14 },
+      });
+    }
+
+    return {
+      id: `custom-prod-${Date.now()}`,
+      name: newProductName,
+      category: newProductCategory.toLowerCase() as any,
+      version: 'tud v4.8',
+      baseSize: currentSize,
+      currentSize: currentSize,
+      position: { x: 0, y: 0 },
+      components,
+      sizeTable: BASIC_BODICE_SIZE_TABLE,
+    };
+  };
+
+  // Launch handlers
+  const handleLaunchInEasyPattern = () => {
+    const product = generateCustomGarmentProduct();
+    setGarment(product);
+    setEasyPatternStep(3);
+    showToast(`🎉 "${newProductName}" created! Opening Step 3 Vector Draft Canvas.`);
+  };
+
+  const handleLaunchInCollab = () => {
+    const product = generateCustomGarmentProduct();
+    setGarment(product);
+    setCADEngineMode('collab');
+    showToast(`⚡ "${newProductName}" created! Opening in 3-in-1 Triple Collab Studio.`);
+  };
+
+  const handleLaunchInTukacad = () => {
+    const product = generateCustomGarmentProduct();
+    setGarment(product);
+    setCADEngineMode('tukacad');
+    setTukacadWorkflowStep(2);
+    showToast(`📐 "${newProductName}" created! Opening in TUKAcad 2D Studio.`);
   };
 
   // ==========================================
@@ -808,169 +1159,964 @@ export const EasyPatternStudio: React.FC = () => {
       {/* ============================================================== */}
       <main className="flex-1 flex overflow-hidden relative">
         {/* ============================================================== */}
-        {/* STEP 1: OPEN EASYPATTERN (Hub & Dashboard)                     */}
+        {/* STEP 1: COMPREHENSIVE PRODUCT CREATION STUDIO & LAUNCHPAD      */}
         {/* ============================================================== */}
         {easyPatternStep === 1 && (
-          <div className="flex-1 flex h-full bg-[#f8fafc] overflow-y-auto">
-            {/* Sidebar like image: Home, New Project, Open Project, Settings, Help */}
-            <div className="w-56 bg-white border-r border-slate-200 p-4 flex flex-col justify-between shrink-0 shadow-xs">
+          <div className="flex-1 flex h-full bg-[#f8fafc] overflow-hidden">
+            {/* 1. Left Navigation Sidebar */}
+            <div className="w-60 bg-white border-r border-slate-200 p-4 flex flex-col justify-between shrink-0 shadow-xs z-10">
               <div className="space-y-1.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   EasyPattern Navigation
                 </div>
                 <button
-                  onClick={() => setEasyPatternStep(1)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-bold text-xs"
+                  onClick={() => setStep1Tab('create-studio')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step1Tab === 'create-studio'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span>Home Hub</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Custom Product Studio</span>
                 </button>
                 <button
-                  onClick={() => {
-                    ensureBasicBodice();
-                    setEasyPatternStep(2);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-xs transition-colors"
+                  onClick={() => setStep1Tab('library')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step1Tab === 'library'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <FolderPlus className="w-4 h-4 text-slate-500" />
-                  <span>New Project</span>
+                  <Layers className="w-4 h-4" />
+                  <span>13 Ready Slopers</span>
                 </button>
                 <button
-                  onClick={() => setActiveSubModal('library')}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-xs transition-colors"
+                  onClick={() => setStep1Tab('recent')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step1Tab === 'recent'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <FolderOpen className="w-4 h-4 text-slate-500" />
-                  <span>Open Project</span>
+                  <Clock className="w-4 h-4" />
+                  <span>Recent & Import</span>
                 </button>
                 <button
-                  onClick={() => setActiveSubModal('settings')}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-xs transition-colors"
+                  onClick={() => setStep1Tab('settings')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step1Tab === 'settings'
+                      ? 'bg-slate-800 text-white shadow-md shadow-slate-700/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <Settings className="w-4 h-4 text-slate-500" />
+                  <Settings className="w-4 h-4" />
                   <span>Settings & Specs</span>
                 </button>
                 <button
-                  onClick={() => setActiveSubModal('tutorial')}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-xs transition-colors"
+                  onClick={() => setStep1Tab('tutorial')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step1Tab === 'tutorial'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-500/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  <HelpCircle className="w-4 h-4 text-slate-500" />
+                  <HelpCircle className="w-4 h-4" />
                   <span>Tutorial & Help</span>
                 </button>
               </div>
 
-              {/* Bottom Version Card */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                <div className="font-bold text-slate-800 text-[11px]">EasyPattern v1.0</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Beginner CAD to TUKAcad Pipeline
+              {/* Version & Active Mode Badge */}
+              <div className="p-3 bg-gradient-to-br from-slate-50 to-blue-50/50 rounded-xl border border-slate-200/80 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-slate-800 text-[11px]">EasyPattern CAD</span>
+                  <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-black">v1.2 PRO</span>
+                </div>
+                <div className="text-[10px] text-slate-500 mt-1">
+                  End-to-End Product Design to TUKAcad Production
                 </div>
               </div>
             </div>
 
-            {/* Main Stage Grid: Action Cards */}
-            <div className="flex-1 p-8 flex flex-col justify-center max-w-4xl mx-auto space-y-6">
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                  1. Launch EasyPattern & Create New Project
-                </h1>
-                <p className="text-sm text-slate-500 max-w-lg mx-auto">
-                  Simple, intuitive garment pattern drafting and automatic multi-size grading for beginners.
-                </p>
-              </div>
+            {/* 2. Main Stage Content */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* TAB 1: CUSTOM PRODUCT CREATION STUDIO (End-to-End from Scratch) */}
+              {step1Tab === 'create-studio' && (
+                <div className="flex-1 flex h-full overflow-hidden">
+                  {/* Left Column: Comprehensive Edit & Customization Options (Scrollable) */}
+                  <div className="w-[480px] xl:w-[520px] h-full overflow-y-auto p-6 bg-white border-r border-slate-200 space-y-6 shrink-0">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">
+                          Product Creator
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">Start from scratch</span>
+                      </div>
+                      <h2 className="text-xl font-black text-slate-900 tracking-tight mt-1">
+                        Create Custom Garment Product
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Customize silhouette, neckline, darts, sleeves, length, and precision dimensions.
+                      </p>
+                    </div>
 
-              {/* 4 Cards Matching Image Step 1 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Card 1: Create New Pattern */}
-                <button
-                  onClick={() => {
-                    ensureBasicBodice();
-                    setEasyPatternStep(2);
-                  }}
-                  className="p-6 rounded-2xl bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/5 hover:shadow-xl hover:border-blue-600 text-left transition-all group flex flex-col justify-between"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <FolderPlus className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
-                      Create New Pattern
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Choose garment type (Basic Bodice, Trouser, Skirt) and size range with standard measurements.
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-blue-600">
-                    <span>Start Step 2</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </button>
+                    {/* Section 1: Product Identity */}
+                    <div className="space-y-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                          1. Product Name & Category
+                        </label>
+                      </div>
 
-                {/* Card 2: Open Project */}
-                <button
-                  onClick={() => setActiveSubModal('library')}
-                  className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md text-left transition-all group flex flex-col justify-between"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <FolderOpen className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
-                      Open Existing Pattern
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Load saved pattern files, templates or previous grading drafts (.ep / .tud).
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-slate-600 group-hover:text-blue-600">
-                    <span>Explore Templates</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </button>
+                      <input
+                        type="text"
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                        placeholder="e.g. Women's Summer Bodice"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                      />
 
-                {/* Card 3: Pattern Library */}
-                <button
-                  onClick={() => setActiveSubModal('library')}
-                  className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md text-left transition-all group flex flex-col justify-between"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Layers className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 group-hover:text-purple-600 transition-colors">
-                      Pattern Library
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Pre-calibrated slopers: Women's Basic Bodice, Trouser sloper, A-line Skirt, Oxford Shirt.
-                    </p>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-purple-600">
-                    <span>Explore Slopers</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </button>
+                      {/* Category Pills */}
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-500 mb-1.5">Gender / Market Category:</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(['Women', 'Men', 'Unisex', 'Outerwear', 'Bottoms'] as const).map((cat) => (
+                            <button
+                              key={cat}
+                              onClick={() => setNewProductCategory(cat)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                newProductCategory === cat
+                                  ? 'bg-blue-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Card 4: Recent Files */}
-                <button
-                  onClick={() => setActiveSubModal('recent')}
-                  className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md text-left transition-all group flex flex-col justify-between"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Clock className="w-6 h-6" />
+                    {/* Section 2: Style & Silhouette Architecture ("innum nara edit pannra option") */}
+                    <div className="space-y-4 p-4 bg-slate-50/80 rounded-2xl border border-slate-200">
+                      <div className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center justify-between">
+                        <span>2. Style & Silhouette Architecture</span>
+                        <span className="text-[10px] text-blue-600 font-semibold">Live updates in 2D preview →</span>
+                      </div>
+
+                      {/* Silhouette Fit */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-600 flex justify-between">
+                          <span>Silhouette Fit:</span>
+                          <span className="text-blue-600 uppercase text-[10px]">
+                            {newSilhouetteFit === 'slim' ? 'Fitted (0 ease)' : newSilhouetteFit === 'regular' ? 'Classic (+4cm ease)' : newSilhouetteFit === 'relaxed' ? 'Loose (+8cm ease)' : 'Oversized (+14cm ease)'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {(['slim', 'regular', 'relaxed', 'oversized'] as const).map((fit) => (
+                            <button
+                              key={fit}
+                              onClick={() => setNewSilhouetteFit(fit)}
+                              className={`py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                                newSilhouetteFit === fit
+                                  ? 'bg-blue-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {fit}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Neckline Style */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-600">Neckline Design:</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'crew', name: 'Crew Neck' },
+                            { id: 'v-neck', name: 'V-Neck Plunge' },
+                            { id: 'scoop', name: 'Wide Scoop' },
+                            { id: 'boat', name: 'Boat Neck' },
+                            { id: 'mandarin', name: 'Mandarin Band' },
+                            { id: 'shirt-collar', name: 'Shirt Collar' },
+                          ].map((neck) => (
+                            <button
+                              key={neck.id}
+                              onClick={() => setNewNecklineStyle(neck.id as any)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all ${
+                                newNecklineStyle === neck.id
+                                  ? 'bg-indigo-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {neck.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dart & Contour Architecture */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-600">Dart & Shaping System:</div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: 'waist-bust', name: 'Waist + Bust Dart (Classic)' },
+                            { id: 'french', name: 'French Diagonal Dart' },
+                            { id: 'princess', name: 'Princess Seam Line' },
+                            { id: 'dartless', name: 'Dartless Relaxed Fit' },
+                          ].map((d) => (
+                            <button
+                              key={d.id}
+                              onClick={() => setNewDartStyle(d.id as any)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-left transition-all truncate ${
+                                newDartStyle === d.id
+                                  ? 'bg-purple-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                              title={d.name}
+                            >
+                              {d.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Sleeve Style */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-600">Sleeve Construction:</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'sleeveless', name: 'Sleeveless' },
+                            { id: 'cap', name: 'Cap Sleeve' },
+                            { id: 'short', name: 'Short (22cm)' },
+                            { id: 'three-quarter', name: '3/4 (44cm)' },
+                            { id: 'long', name: 'Long (58cm)' },
+                            { id: 'raglan', name: 'Raglan Sleeve' },
+                          ].map((slv) => (
+                            <button
+                              key={slv.id}
+                              onClick={() => setNewSleeveStyle(slv.id as any)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all ${
+                                newSleeveStyle === slv.id
+                                  ? 'bg-rose-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {slv.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Length & Hem Style */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-bold text-slate-600">Garment Length:</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'cropped', name: 'Cropped (38cm)' },
+                            { id: 'waist', name: 'Waist (45cm)' },
+                            { id: 'hip', name: 'Hip Length (60cm)' },
+                            { id: 'tunic', name: 'Tunic (76cm)' },
+                            { id: 'knee', name: 'Knee (98cm)' },
+                            { id: 'maxi', name: 'Maxi (132cm)' },
+                          ].map((len) => (
+                            <button
+                              key={len.id}
+                              onClick={() => setNewHemLength(len.id as any)}
+                              className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all ${
+                                newHemLength === len.id
+                                  ? 'bg-teal-600 text-white shadow-sm'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {len.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Hem Shape & Closure */}
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-600 mb-1">Hemline Shape:</div>
+                          <select
+                            value={newHemShape}
+                            onChange={(e) => setNewHemShape(e.target.value as any)}
+                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
+                          >
+                            <option value="straight">Straight Clean Hem</option>
+                            <option value="shirttail">Curved Shirttail Hem</option>
+                            <option value="asymmetric">High-Low Asymmetric</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-600 mb-1">Closure / Placket:</div>
+                          <select
+                            value={newClosure}
+                            onChange={(e) => setNewClosure(e.target.value as any)}
+                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
+                          >
+                            <option value="pullover">Pullover / Stretch</option>
+                            <option value="button-placket">Front Button Placket</option>
+                            <option value="invisible-zip">Back Invisible Zip</option>
+                            <option value="wrap">Side Wrap & Tie</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Pockets */}
+                      <div>
+                        <div className="text-[11px] font-bold text-slate-600 mb-1">Pockets:</div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { id: 'none', name: 'None' },
+                            { id: 'chest-patch', name: 'Patch Pkt' },
+                            { id: 'inseam', name: 'In-Seam' },
+                            { id: 'flap-welt', name: 'Flap Welt' },
+                          ].map((pkt) => (
+                            <button
+                              key={pkt.id}
+                              onClick={() => setNewPocket(pkt.id as any)}
+                              className={`py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                newPocket === pkt.id
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {pkt.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 3: Precision Measurements & Fit */}
+                    <div className="space-y-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                          3. Sizing & Precision Measurements (cm)
+                        </label>
+                        {/* Size Switcher */}
+                        <div className="flex items-center bg-white rounded-lg p-0.5 border border-slate-200">
+                          {(['XS', 'S', 'M', 'L', 'XL', 'XXL'] as GarmentSize[]).map((sz) => (
+                            <button
+                              key={sz}
+                              onClick={() => setCurrentSize(sz)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+                                currentSize === sz
+                                  ? 'bg-blue-600 text-white'
+                                  : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              {sz}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                          <span className="text-[11px] text-slate-500 font-medium">Bust / Chest:</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.bustChest} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, bustChest: Math.max(70, +(m.bustChest - 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, bustChest: Math.min(130, +(m.bustChest + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                          <span className="text-[11px] text-slate-500 font-medium">Waist:</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.waist} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, waist: Math.max(50, +(m.waist - 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, waist: Math.min(120, +(m.waist + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                          <span className="text-[11px] text-slate-500 font-medium">Shoulder Width:</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.shoulderWidth} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.max(9, +(m.shoulderWidth - 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.min(20, +(m.shoulderWidth + 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                          <span className="text-[11px] text-slate-500 font-medium">Back Length:</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.backLength} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.max(30, +(m.backLength - 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.min(80, +(m.backLength + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 4: Production & Seam Specs */}
+                    <div className="space-y-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                        4. Production CAD Specs & Fabric
+                      </label>
+
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <div className="text-[11px] font-semibold text-slate-500 mb-1">Seam Allowance:</div>
+                          <select
+                            value={newSeamAllowance}
+                            onChange={(e) => setNewSeamAllowance(parseFloat(e.target.value))}
+                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-700"
+                          >
+                            <option value="0.5">0.5 cm (Knits / Stretch)</option>
+                            <option value="1.0">1.0 cm (CAD Standard)</option>
+                            <option value="1.25">1.25 cm (Commercial 1/2")</option>
+                            <option value="1.5">1.5 cm (Bespoke Tailoring)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <div className="text-[11px] font-semibold text-slate-500 mb-1">Fabric Material:</div>
+                          <select
+                            value={newFabricType}
+                            onChange={(e) => setNewFabricType(e.target.value)}
+                            className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-700"
+                          >
+                            <option value="Cotton Jersey">Cotton Jersey (160 g/m²)</option>
+                            <option value="Silk Satin">Silk Satin (80 g/m²)</option>
+                            <option value="Heavy Denim">Heavy Denim (420 g/m²)</option>
+                            <option value="Wool Flannel">Wool Flannel (340 g/m²)</option>
+                            <option value="Linen Natural">Linen Natural (210 g/m²)</option>
+                            <option value="Leather">Leather (550 g/m²)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Fabric Color Swatches */}
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-500 mb-1.5">Fabric Drape Color:</div>
+                        <div className="flex items-center gap-2">
+                          {['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#1e293b', '#e2e8f0'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => setNewFabricColor(color)}
+                              className={`w-6 h-6 rounded-full border-2 transition-all ${
+                                newFabricColor === color ? 'border-blue-600 scale-110 shadow-sm' : 'border-white hover:scale-105'
+                              }`}
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 group-hover:text-emerald-600 transition-colors">
-                      Recent Files
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Basic_Bodice_Size_S.ep • Front & Back Bodice with Waist Dart & Seam Allowance.
-                    </p>
+
+                  {/* Right Column: Live Real-Time Interactive Vector Pattern Preview */}
+                  {(() => {
+                    const previewGarment = generateCustomGarmentProduct();
+                    return (
+                      <div className="flex-1 h-full bg-[#0e1117] flex flex-col justify-between overflow-hidden relative">
+                        {/* Preview Top Header HUD */}
+                        <div className="p-4 bg-[#141721] border-b border-zinc-800 flex items-center justify-between shrink-0">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <h3 className="text-sm font-black text-white tracking-tight">
+                                Live Real-Time Pattern Geometry
+                              </h3>
+                              <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-bold">
+                                {previewGarment.components.length} CAD Pieces Generated
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 mt-0.5">
+                              {newProductName} • {newSilhouetteFit.toUpperCase()} FIT • {newNecklineStyle.toUpperCase()} • Size {currentSize}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
+                            <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
+                              Bust: {newMeasurements.bustChest}cm
+                            </span>
+                            <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
+                              Waist: {newMeasurements.waist}cm
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Interactive SVG Pattern Canvas */}
+                        <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden">
+                          <svg
+                            viewBox="-30 -30 920 620"
+                            className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
+                          >
+                            <defs>
+                              <pattern id="grid-pattern-step1" width="30" height="30" patternUnits="userSpaceOnUse">
+                                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                              </pattern>
+                            </defs>
+                            <rect x="-30" y="-30" width="920" height="620" fill="url(#grid-pattern-step1)" />
+
+                            {/* Render All Components in Live Preview */}
+                            {previewGarment.components.map((comp) => {
+                              // Build SVG path string from component commands
+                              let d = '';
+                              comp.paths.forEach((cmd) => {
+                                if (cmd.type === 'M' && cmd.points[0]) {
+                                  d += `M ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                } else if (cmd.type === 'L' && cmd.points[0]) {
+                                  d += `L ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                } else if (cmd.type === 'C' && cmd.points.length >= 3) {
+                                  d += `C ${cmd.points[0].x} ${cmd.points[0].y}, ${cmd.points[1].x} ${cmd.points[1].y}, ${cmd.points[2].x} ${cmd.points[2].y} `;
+                                } else if (cmd.type === 'Z') {
+                                  d += 'Z ';
+                                }
+                              });
+
+                              return (
+                                <g
+                                  key={comp.id}
+                                  transform={`translate(${comp.offset.x + 30}, ${comp.offset.y + 40})`}
+                                  className="transition-all duration-300"
+                                >
+                                  {/* Pattern Piece Shaded Body */}
+                                  <path
+                                    d={d}
+                                    fill={newFabricColor}
+                                    fillOpacity="0.18"
+                                    stroke={newFabricColor}
+                                    strokeWidth="2.5"
+                                    strokeLinejoin="round"
+                                    strokeLinecap="round"
+                                  />
+
+                                  {/* Seam Allowance Offset Line */}
+                                  <path
+                                    d={d}
+                                    fill="none"
+                                    stroke="#38bdf8"
+                                    strokeWidth="1.2"
+                                    strokeDasharray="4 3"
+                                    opacity="0.75"
+                                    transform={`scale(1.03)`}
+                                  />
+
+                                  {/* Grainline Arrow */}
+                                  <line
+                                    x1={comp.grainline.start.x}
+                                    y1={comp.grainline.start.y}
+                                    x2={comp.grainline.end.x}
+                                    y2={comp.grainline.end.y}
+                                    stroke="#10b981"
+                                    strokeWidth="2"
+                                  />
+                                  <text
+                                    x={comp.grainline.start.x + 8}
+                                    y={(comp.grainline.start.y + comp.grainline.end.y) / 2}
+                                    fill="#10b981"
+                                    fontSize="10"
+                                    fontWeight="bold"
+                                    transform={`rotate(90, ${comp.grainline.start.x + 8}, ${(comp.grainline.start.y + comp.grainline.end.y) / 2})`}
+                                  >
+                                    {comp.grainline.label}
+                                  </text>
+
+                                  {/* Piece Title Tag */}
+                                  <text
+                                    x={comp.labels[0]?.position.x || 60}
+                                    y={comp.labels[0]?.position.y || 80}
+                                    fill="#f8fafc"
+                                    fontSize="12"
+                                    fontWeight="bold"
+                                    letterSpacing="0.05em"
+                                  >
+                                    {comp.name}
+                                  </text>
+                                  <text
+                                    x={comp.labels[0]?.position.x || 60}
+                                    y={(comp.labels[0]?.position.y || 80) + 16}
+                                    fill="#94a3b8"
+                                    fontSize="10"
+                                  >
+                                    {comp.cutInstruction} • Size {currentSize}
+                                  </text>
+
+                                  {/* Landmark Point Dots */}
+                                  {comp.paths.flatMap((p) => p.points).filter((pt) => !pt.isControl && pt.name).map((pt, pIdx) => (
+                                    <g key={pIdx} transform={`translate(${pt.x}, ${pt.y})`}>
+                                      <circle r="3.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
+                                      <text x="6" y="3" fill="#cbd5e1" fontSize="9" fontWeight="600">
+                                        {pt.name}
+                                      </text>
+                                    </g>
+                                  ))}
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        </div>
+
+                        {/* Bottom Launch Actions (Create Product from Start to Finish) */}
+                        <div className="p-4 bg-[#141721] border-t border-zinc-800 flex items-center justify-between gap-4 shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-10 h-10 rounded-xl border-2 border-white/40 flex items-center justify-center font-bold text-white shadow-md"
+                              style={{ backgroundColor: newFabricColor }}
+                            >
+                              EP
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-white">
+                                Ready to Generate: {newProductName}
+                              </div>
+                              <div className="text-[11px] text-zinc-400">
+                                {newSilhouetteFit} fit • {newNecklineStyle} • {newSleeveStyle} • SA: {newSeamAllowance}cm
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3 Huge Action Buttons */}
+                          <div className="flex items-center gap-2.5">
+                            {/* Primary EasyPattern Draft CTA */}
+                            <button
+                              onClick={handleLaunchInEasyPattern}
+                              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                              <Sparkles className="w-4 h-4 fill-white" />
+                              <span>Create & Draft in EasyPattern</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* 3-in-1 Triple Collab Launch CTA */}
+                            <button
+                              onClick={handleLaunchInCollab}
+                              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                              title="Collaborate simultaneously in EasyPattern + TUKAcad 2D + CLO 3D Drape"
+                            >
+                              <Zap className="w-4 h-4 fill-white text-amber-200" />
+                              <span>⚡ Launch in 3-in-1 Collab</span>
+                            </button>
+
+                            {/* TUKAcad 2D Studio CTA */}
+                            <button
+                              onClick={handleLaunchInTukacad}
+                              className="px-3.5 py-2.5 rounded-xl bg-[#222533] hover:bg-[#2b2f42] text-zinc-200 hover:text-white font-bold text-xs border border-zinc-700 transition-all flex items-center gap-1.5"
+                            >
+                              <Layers className="w-3.5 h-3.5 text-rose-400" />
+                              <span>TUKAcad 2D</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* TAB 2: 13 READY-TO-SEW SLOPERS LIBRARY */}
+              {step1Tab === 'library' && (
+                <div className="flex-1 p-8 bg-[#f8fafc] overflow-y-auto">
+                  <div className="max-w-6xl mx-auto space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                          13 Standard Production Slopers Library
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Industry-calibrated patterns ready for vector editing, grading, and 3D simulation.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setStep1Tab('create-studio')}
+                        className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Custom Product Studio</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        { id: 'basic-bodice', name: "Women's Basic Bodice", pcs: 2, cat: 'Women', desc: 'Front & Back bodice with bust & waist darts.' },
+                        { id: 'flared-skirt', name: 'A-Line Flared Skirt', pcs: 2, cat: 'Women', desc: 'Two-piece tailored flared skirt sloper.' },
+                        { id: 'bootcut-pant', name: "Women's Boot Cut Pant", pcs: 4, cat: 'Women', desc: 'Contour waistband, front & back leg pieces.' },
+                        { id: 'trouser', name: 'Chino Trouser', pcs: 4, cat: 'Men', desc: 'Slash pockets, back double-welt sloper.' },
+                        { id: 'denim-jeans', name: 'Denim 5-Pocket Jeans', pcs: 5, cat: 'Unisex', desc: 'Coin pocket, curved yoke, and twin-needle back.' },
+                        { id: 'basic-tshirt', name: 'Basic Crew T-Shirt', pcs: 3, cat: 'Unisex', desc: 'Classic crew neckline, set-in short sleeve.' },
+                        { id: 'polo', name: 'Polo Shirt (Collar & Placket)', pcs: 4, cat: 'Men', desc: 'Ribbed knit collar with two-button front box.' },
+                        { id: 'shirt', name: 'Casual Button-Up Shirt', pcs: 6, cat: 'Men', desc: 'Two-piece collar stand, yoke, and button placket.' },
+                        { id: 'sheath-dress', name: 'Sheath Cocktail Dress', pcs: 3, cat: 'Women', desc: 'Fitted princess line silhouette with rear kick vent.' },
+                        { id: 'suit-jacket', name: "Men's Tailored Suit Jacket", pcs: 16, cat: 'Men', desc: 'Two-button notch lapel, chest canvas, side bodies.' },
+                        { id: 'double-breasted-blazer', name: 'Double-Breasted Blazer', pcs: 12, cat: 'Men', desc: 'Peak lapel, tailored shoulder structure.' },
+                        { id: 'trench-coat', name: 'Classic Trench Coat', pcs: 14, cat: 'Outerwear', desc: 'Gun flap, storm shield, epaulets, and belt.' },
+                        { id: 'bomber-jacket', name: 'Flight Bomber Jacket', pcs: 8, cat: 'Outerwear', desc: 'Raglan sleeve, ribbed collar, and welt pockets.' },
+                      ].map((item) => (
+                        <div
+                          key={item.id}
+                          className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">
+                                {item.cat}
+                              </span>
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                {item.pcs} Pieces
+                              </span>
+                            </div>
+                            <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {item.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                              {item.desc}
+                            </p>
+                          </div>
+
+                          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <button
+                              onClick={() => {
+                                loadGarmentTemplate(item.id as any);
+                                setEasyPatternStep(3);
+                                showToast(`Loaded "${item.name}" into Step 3 Draft!`);
+                              }}
+                              className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-xs transition-colors"
+                            >
+                              Draft Pattern
+                            </button>
+                            <button
+                              onClick={() => {
+                                loadGarmentTemplate(item.id as any);
+                                setCADEngineMode('collab');
+                                showToast(`⚡ Loaded "${item.name}" into 3-in-1 Collab Studio!`);
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors flex items-center gap-1"
+                              title="Collaborate in EasyPattern + TUKAcad + CLO 3D"
+                            >
+                              <Zap className="w-3 h-3 text-emerald-600" />
+                              <span>Collab</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-4 flex items-center gap-1 text-xs font-bold text-emerald-600">
-                    <span>Recent Drafts</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              )}
+
+              {/* TAB 3: RECENT PROJECTS & FILE IMPORTER */}
+              {step1Tab === 'recent' && (
+                <div className="flex-1 p-8 bg-[#f8fafc] overflow-y-auto">
+                  <div className="max-w-4xl mx-auto space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        Recent Projects & File Importer
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Resume your drafts or import standard apparel CAD files (.ep, .tud, .dxf, .json).
+                      </p>
+                    </div>
+
+                    {/* File Dropzone */}
+                    <div className="p-8 rounded-2xl bg-white border-2 border-dashed border-slate-300 hover:border-blue-500 transition-colors text-center cursor-pointer shadow-xs">
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div className="font-bold text-sm text-slate-800">
+                        Drag & drop pattern file here, or browse
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Supports EasyPattern (.ep), TUKAcAd (.tud), DXF-AAMA, and Vector SVG formats.
+                      </p>
+                    </div>
+
+                    {/* Recent Projects List */}
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                      <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700">
+                        Recent Workspace Drafts
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {[
+                          { title: "Women's Basic Bodice (Size S-M)", date: 'Today, 18:30', pieces: 2 },
+                          { title: 'Casual Button-Up Shirt (Size L)', date: 'Yesterday', pieces: 6 },
+                          { title: 'A-Line Flared Skirt (Size M)', date: '3 days ago', pieces: 2 },
+                          { title: 'Classic Crew T-Shirt (Size M)', date: '5 days ago', pieces: 3 },
+                        ].map((proj, idx) => (
+                          <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                                CAD
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold text-slate-800">{proj.title}</div>
+                                <div className="text-[10px] text-slate-500">{proj.date} • {proj.pieces} Pattern Pieces</div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                ensureBasicBodice();
+                                setEasyPatternStep(3);
+                                showToast(`Loaded "${proj.title}"!`);
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-bold text-xs transition-colors"
+                            >
+                              Open Draft
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </button>
-              </div>
+                </div>
+              )}
+
+              {/* TAB 4: STUDIO SETTINGS & SPECS */}
+              {step1Tab === 'settings' && (
+                <div className="flex-1 p-8 bg-[#f8fafc] overflow-y-auto">
+                  <div className="max-w-2xl mx-auto space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        Studio Settings & Calibration
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Configure measurement unit systems, grid snapping, and industrial tolerances.
+                      </p>
+                    </div>
+
+                    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4 text-xs">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                          <div className="font-bold text-slate-800">Measurement Unit System</div>
+                          <div className="text-slate-500 text-[11px]">Choose between Centimeters (cm) and Inches (in)</div>
+                        </div>
+                        <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                          <button
+                            onClick={() => setAppSettings((s) => ({ ...s, unit: 'cm' }))}
+                            className={`px-3 py-1 rounded-md font-bold ${appSettings.unit === 'cm' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600'}`}
+                          >
+                            Metric (cm)
+                          </button>
+                          <button
+                            onClick={() => setAppSettings((s) => ({ ...s, unit: 'in' }))}
+                            className={`px-3 py-1 rounded-md font-bold ${appSettings.unit === 'in' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600'}`}
+                          >
+                            Imperial (in)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                          <div className="font-bold text-slate-800">Display Grid & Landmarks</div>
+                          <div className="text-slate-500 text-[11px]">Show millimeter coordinate grid and landmark labels</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={appSettings.showGrid}
+                          onChange={(e) => setAppSettings((s) => ({ ...s, showGrid: e.target.checked }))}
+                          className="accent-blue-600 w-4 h-4 cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800">Snap to Grid Anchors</div>
+                          <div className="text-slate-500 text-[11px]">Snap vector points to closest 10mm increment</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={appSettings.snapToGrid}
+                          onChange={(e) => setAppSettings((s) => ({ ...s, snapToGrid: e.target.checked }))}
+                          className="accent-blue-600 w-4 h-4 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: TUTORIAL & HELP */}
+              {step1Tab === 'tutorial' && (
+                <div className="flex-1 p-8 bg-[#f8fafc] overflow-y-auto">
+                  <div className="max-w-3xl mx-auto space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        EasyPattern Quick Start Guide
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Learn how to draft patterns, grade sizes, and transfer to TUKAcad.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      {[
+                        { step: '1. Create Product', desc: 'Select garment archetype, choose neckline, darts, and sleeves in the studio.' },
+                        { step: '2. Precision Draft', desc: 'Interactive SVG canvas allows dragging neckline, shoulder, and dart apex points.' },
+                        { step: '3. Add Seam Allowance', desc: 'Adjust seam allowance slider from 0.5cm up to 2.5cm with auto-corner miters.' },
+                        { step: '4. Grade XS to XXL', desc: 'Select sizes to instantly view nested grading contours.' },
+                      ].map((tut, i) => (
+                        <div key={i} className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
+                          <div className="font-bold text-blue-600 text-sm mb-1">{tut.step}</div>
+                          <p className="text-slate-600 leading-relaxed">{tut.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setStep1Tab('create-studio')}
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs"
+                    >
+                      Return to Product Studio
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
