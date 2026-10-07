@@ -3,7 +3,8 @@ import { useCADStore } from '../../store/useCADStore';
 import { PatternWorkspace } from '../PatternWorkspace';
 import { Clo3DViewport } from '../clo3d/Clo3DViewport';
 import { TukaDrawingToolbar } from '../tukacad/TukaDrawingToolbar';
-import { GarmentSize, SurfaceMode, AvatarPose } from '@shared/types';
+import { GarmentSize, SurfaceMode, AvatarPose, PatternComponent } from '@shared/types';
+import { pathCommandsToSvgString } from '@shared/gradingEngine';
 import {
   Sparkles,
   Layers,
@@ -32,11 +33,59 @@ import {
   SplitSquareVertical,
   Columns,
   Grid,
+  Palette,
+  Target,
 } from 'lucide-react';
+
+// Helper to compute individual pattern piece dimensions & SVG preview viewport
+function getPieceMetrics(comp: PatternComponent) {
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  let pointCount = 0;
+
+  comp.paths.forEach((p) => {
+    p.points.forEach((pt) => {
+      pointCount++;
+      if (pt.x < minX) minX = pt.x;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.y > maxY) maxY = pt.y;
+    });
+  });
+
+  if (minX === Infinity) {
+    return {
+      widthCm: '0.0',
+      heightCm: '0.0',
+      viewBox: '-10 -10 100 100',
+      pointCount: 0,
+      notchCount: comp.notches?.length || 0,
+    };
+  }
+
+  const w = Math.max(20, maxX - minX);
+  const h = Math.max(20, maxY - minY);
+  const padX = w * 0.12;
+  const padY = h * 0.12;
+
+  return {
+    widthCm: (w / 10).toFixed(1),
+    heightCm: (h / 10).toFixed(1),
+    viewBox: `${(minX - padX).toFixed(1)} ${(minY - padY).toFixed(1)} ${(w + padX * 2).toFixed(1)} ${(h + padY * 2).toFixed(1)}`,
+    pointCount,
+    notchCount: comp.notches?.length || 0,
+  };
+}
 
 export const CollabUnifiedStudio: React.FC = () => {
   const {
     garment,
+    selectedComponentId,
+    setSelectedComponent,
+    selectEntireGarment,
+    setPanOffset,
     currentSize,
     targetSize,
     executeGrading,
@@ -103,23 +152,60 @@ export const CollabUnifiedStudio: React.FC = () => {
 
   const sizes: GarmentSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-  const templates: Array<{ id: any; name: string }> = [
-    { id: 'basic-bodice', name: "★ Women's Basic Bodice (2 Pcs: FR-BD, BK-BD)" },
-    { id: 'flared-skirt', name: 'A-Line Flared Skirt (2 Pcs)' },
-    { id: 'bootcut-pant', name: "Women's Boot Cut Pant (4 Pcs)" },
-    { id: 'trouser', name: 'Chino Trouser (4 Pcs)' },
-    { id: 'denim-jeans', name: 'Denim Jeans (5 Pcs)' },
-    { id: 'basic-tshirt', name: 'Basic Crew T-Shirt (3 Pcs)' },
-    { id: 'polo', name: 'Polo Shirt (4 Pcs)' },
-    { id: 'shirt', name: 'Casual Button-Up Shirt (6 Pcs)' },
-    { id: 'sheath-dress', name: 'Cocktail Sheath Dress (3 Pcs)' },
-    { id: 'suit-jacket', name: "Men's Tailored Suit Jacket (16 Pcs)" },
-    { id: 'double-breasted-blazer', name: 'Double-Breasted Blazer (12 Pcs)' },
-    { id: 'trench-coat', name: 'Classic Trench Coat (14 Pcs)' },
-    { id: 'bomber-jacket', name: 'Flight Bomber Jacket (8 Pcs)' },
+  // Categorized product templates for Shirts, Pants, Dresses, Jackets
+  const productCategories = [
+    {
+      category: '👔 Shirts & Tops',
+      items: [
+        { id: 'shirt', name: 'Casual Button-Up Shirt (4 Pcs)' },
+        { id: 'polo', name: 'Pique Polo Shirt (4 Pcs)' },
+        { id: 'basic-tshirt', name: 'Basic Crew T-Shirt (3 Pcs)' },
+        { id: 'basic-bodice', name: "★ Women's Basic Bodice (2 Pcs)" },
+      ],
+    },
+    {
+      category: '👖 Pants & Trousers',
+      items: [
+        { id: 'trouser', name: 'Flat-Front Chino Trouser (3 Pcs)' },
+        { id: 'denim-jeans', name: 'Denim 5-Pocket Jeans (4 Pcs)' },
+        { id: 'bootcut-pant', name: "Women's Boot Cut Pant (4 Pcs)" },
+      ],
+    },
+    {
+      category: '👗 Dresses & Skirts',
+      items: [
+        { id: 'flared-skirt', name: 'A-Line Flared Skirt (2 Pcs)' },
+        { id: 'sheath-dress', name: 'Cocktail Sheath Dress (3 Pcs)' },
+      ],
+    },
+    {
+      category: '🧥 Outerwear & Jackets',
+      items: [
+        { id: 'suit-jacket', name: "Men's Tailored Suit Jacket (16 Pcs)" },
+        { id: 'double-breasted-blazer', name: 'Double-Breasted Blazer (12 Pcs)' },
+        { id: 'trench-coat', name: 'Classic Trench Coat (14 Pcs)' },
+        { id: 'bomber-jacket', name: 'Flight Bomber Jacket (8 Pcs)' },
+      ],
+    },
   ];
 
-  // Fabric presets
+  // Curated color swatches for instant 2D & 3D re-coloring
+  const curatedColors = [
+    { name: 'Navy Blue', hex: '#1e3a8a' },
+    { name: 'Denim Indigo', hex: '#2563eb' },
+    { name: 'Chino Khaki', hex: '#b48a4c' },
+    { name: 'Slate Charcoal', hex: '#334155' },
+    { name: 'Jet Black', hex: '#18181b' },
+    { name: 'Crisp White', hex: '#f8fafc' },
+    { name: 'Crimson Red', hex: '#dc2626' },
+    { name: 'Emerald Green', hex: '#059669' },
+    { name: 'Royal Purple', hex: '#7c3aed' },
+    { name: 'Warm Tan', hex: '#d97706' },
+    { name: 'Olive Green', hex: '#3f6212' },
+    { name: 'Coral Rose', hex: '#f43f5e' },
+  ];
+
+  // Fabric physics presets
   const fabricPresets = [
     { name: 'Cotton Jersey', color: '#3b82f6', weight: 160, stretch: 15, bendStiffness: 25 },
     { name: 'Silk Satin', color: '#ec4899', weight: 80, stretch: 5, bendStiffness: 10 },
@@ -138,6 +224,28 @@ export const CollabUnifiedStudio: React.FC = () => {
     { id: 'FV2_09_Sitting', name: 'Sitting' },
     { id: 'FV2_10_ArmsUp', name: 'Arms Up' },
   ];
+
+  // Active archetype flags
+  const nameLower = garment.name.toLowerCase();
+  const isShirt =
+    nameLower.includes('shirt') || nameLower.includes('polo') || nameLower.includes('t-shirt');
+  const isPant =
+    nameLower.includes('trouser') ||
+    nameLower.includes('pant') ||
+    nameLower.includes('jean') ||
+    nameLower.includes('chino');
+  const isBodice = nameLower.includes('bodice');
+  const isSkirt = nameLower.includes('skirt');
+  const isJacket =
+    nameLower.includes('jacket') || nameLower.includes('blazer') || nameLower.includes('coat');
+  const isDress = nameLower.includes('dress');
+
+  // Find currently active template id
+  const currentTemplateId =
+    productCategories
+      .flatMap((c) => c.items)
+      .find((t) => nameLower.includes(t.id) || nameLower.includes(t.name.toLowerCase().split(' ')[0]))
+      ?.id || (isShirt ? 'shirt' : isPant ? 'trouser' : 'basic-bodice');
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0c0d11] select-none font-sans text-white">
@@ -167,20 +275,76 @@ export const CollabUnifiedStudio: React.FC = () => {
             </div>
           </div>
 
-          {/* Active Garment Selector Dropdown */}
-          <div className="hidden md:flex items-center ml-2">
+          {/* Categorized Product Selector Dropdown */}
+          <div className="hidden md:flex items-center gap-1 ml-2">
             <select
-              value={templates.find((t) => garment.name.toLowerCase().includes(t.name.toLowerCase()))?.id || 'basic-bodice'}
+              value={currentTemplateId}
               onChange={(e) => loadGarmentTemplate(e.target.value as any)}
-              className="bg-[#1c1f2b] border border-zinc-700 hover:border-zinc-500 rounded-md px-2 py-1 text-xs font-semibold text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer max-w-[210px] truncate"
-              title="Switch Garment Template"
+              className="bg-[#1c1f2b] border border-zinc-700 hover:border-zinc-500 rounded-md px-2.5 py-1 text-xs font-semibold text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer max-w-[210px] truncate"
+              title="Select Garment (Shirt, Pant, Skirt, Bodice, Jacket, Dress)"
             >
-              {templates.map((tpl) => (
-                <option key={tpl.id} value={tpl.id}>
-                  {tpl.name}
-                </option>
+              {productCategories.map((group) => (
+                <optgroup key={group.category} label={group.category} className="bg-[#14161d] font-bold text-zinc-300">
+                  {group.items.map((item) => (
+                    <option key={item.id} value={item.id} className="text-zinc-200">
+                      {item.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
+
+            {/* Quick Archetype Switcher Chips */}
+            <div className="hidden lg:flex items-center gap-1 ml-1">
+              <button
+                onClick={() => loadGarmentTemplate('shirt')}
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  isShirt
+                    ? 'bg-cyan-600 text-white shadow-sm ring-1 ring-cyan-400'
+                    : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
+                }`}
+                title="Select Shirt Archetype"
+              >
+                <span>👔</span>
+                <span>Shirt</span>
+              </button>
+              <button
+                onClick={() => loadGarmentTemplate('trouser')}
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  isPant
+                    ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400'
+                    : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
+                }`}
+                title="Select Pants Archetype"
+              >
+                <span>👖</span>
+                <span>Pants</span>
+              </button>
+              <button
+                onClick={() => loadGarmentTemplate('basic-bodice')}
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  isBodice
+                    ? 'bg-rose-600 text-white shadow-sm ring-1 ring-rose-400'
+                    : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
+                }`}
+                title="Select Bodice Sloper"
+              >
+                <span>★</span>
+                <span>Bodice</span>
+              </button>
+              <button
+                onClick={() => loadGarmentTemplate('flared-skirt')}
+                className={`px-2 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  isSkirt
+                    ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                    : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
+                }`}
+                title="Select Flared Skirt"
+              >
+                <span>✨</span>
+                <span>Skirt</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -372,26 +536,223 @@ export const CollabUnifiedStudio: React.FC = () => {
         {/* PANE 1: EASYPATTERN STUDIO (Sloper, Sizing & Delas)          */}
         {/* ============================================================ */}
         {(layoutMode === 'triple' || layoutMode === 'dual-easy-3d' || layoutMode === 'dual-easy-cad') && (
-          <div className="w-72 xl:w-80 h-full bg-[#161820] border-r border-zinc-800 flex flex-col shrink-0 overflow-y-auto">
-            {/* Pane Header */}
+          <div className="w-80 xl:w-96 h-full bg-[#161820] border-r border-zinc-800 flex flex-col shrink-0 overflow-y-auto">
+            {/* 1. Pane Header with Active Garment Info */}
             <div className="p-3 bg-[#1b1e29] border-b border-zinc-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs text-white">
+                <div className="w-7 h-7 rounded bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-cyan-500/20">
                   EP
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xs text-cyan-300">
-                    1. EasyPattern Studio
+                  <h3 className="font-extrabold text-xs text-cyan-300 truncate max-w-[170px]">
+                    {garment.name}
                   </h3>
-                  <p className="text-[10px] text-zinc-400">Parametric Sloper & Sizing</p>
+                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                    <span className="capitalize text-cyan-400 font-semibold">{garment.category || 'Garment'}</span>
+                    <span>•</span>
+                    <span>{garment.components.length} Pieces</span>
+                  </div>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-900/50 text-cyan-300 border border-cyan-700/50">
-                Size {currentSize}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-600 text-white shadow-xs">
+                  Size {currentSize}
+                </span>
+              </div>
             </div>
 
-            {/* Sizing & Dimension Sliders ("size agisee pannura mathiri") */}
+            {/* 2. PATTERN PIECES BREAKDOWN SHELF ("thanithaniya ennaku show aganum") */}
+            <div className="p-3 border-b border-zinc-800 space-y-2.5 bg-[#14161f]">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-cyan-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Scissors className="w-3.5 h-3.5 text-cyan-400" />
+                  Pattern Pieces Breakdown ({garment.components.length})
+                </span>
+                <button
+                  onClick={selectEntireGarment}
+                  className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all ${
+                    selectedComponentId === 'entire' || selectedComponentId === null
+                      ? 'bg-blue-600 text-white shadow-xs ring-1 ring-blue-400'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                  }`}
+                  title="View all pieces assembled in CAD canvas"
+                >
+                  All Pieces
+                </button>
+              </div>
+
+              {/* Individual Piece Cards Filmstrip ("thanithaniya show") */}
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                {garment.components.map((comp, idx) => {
+                  const isSelected = selectedComponentId === comp.id;
+                  const metrics = getPieceMetrics(comp);
+                  const pathData = pathCommandsToSvgString(comp.paths);
+                  const pieceCode = comp.pieceCode || comp.id.toUpperCase();
+
+                  return (
+                    <div
+                      key={comp.id}
+                      onClick={() => {
+                        setSelectedComponent(comp.id);
+                        setPanOffset({
+                          x: 180 - comp.offset.x * 0.8,
+                          y: 120 - comp.offset.y * 0.8,
+                        });
+                      }}
+                      className={`p-2 rounded-lg border cursor-pointer transition-all flex items-center gap-2.5 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-cyan-950/70 to-blue-950/60 border-cyan-400 shadow-md ring-1 ring-cyan-400/50'
+                          : 'bg-[#181a24] border-zinc-800 hover:border-zinc-600 hover:bg-[#1e212e]'
+                      }`}
+                      title={`Click to inspect & isolate: ${comp.name}`}
+                    >
+                      {/* Mini SVG Preview of Individual Piece */}
+                      <div
+                        className="w-12 h-12 rounded bg-black/60 border border-zinc-800/80 p-1 flex items-center justify-center shrink-0 overflow-hidden"
+                      >
+                        <svg
+                          viewBox={metrics.viewBox}
+                          className="w-full h-full pointer-events-none"
+                          preserveAspectRatio="xMidYMid meet"
+                        >
+                          <path
+                            d={pathData}
+                            fill={activeFabric.color}
+                            fillOpacity={isSelected ? 0.6 : 0.3}
+                            stroke={isSelected ? '#38bdf8' : '#22c55e'}
+                            strokeWidth="3.5"
+                          />
+                        </svg>
+                      </div>
+
+                      {/* Piece Information */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-xs font-bold truncate ${
+                              isSelected ? 'text-cyan-200' : 'text-zinc-200'
+                            }`}
+                          >
+                            {comp.name}
+                          </span>
+                          {isSelected && (
+                            <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
+                              Active
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-[10px] text-zinc-400 truncate mt-0.5">
+                          {comp.cutInstruction || `Cut 1 • ${pieceCode}`}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-zinc-400">
+                          <span className="text-emerald-400 font-bold">
+                            {metrics.widthCm} × {metrics.heightCm} cm
+                          </span>
+                          <span>•</span>
+                          <span>{metrics.notchCount} notches</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Selected Piece Inspector Callout (if single piece selected) */}
+              {selectedComponentId && selectedComponentId !== 'entire' && (
+                <div className="p-2 rounded bg-cyan-950/40 border border-cyan-800/40 flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-1.5 text-cyan-300">
+                    <Target className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="font-semibold truncate max-w-[180px]">
+                      Isolated: {garment.components.find((c) => c.id === selectedComponentId)?.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={selectEntireGarment}
+                    className="text-cyan-400 hover:text-white underline font-bold"
+                  >
+                    Reset to All
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 3. FABRIC COLOR & MATERIAL SELECTION ("size coloeslam pannurom") */}
+            <div className="p-3 border-b border-zinc-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-rose-400" />
+                  Garment Color & Material
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase">
+                  {activeFabric.name}
+                </span>
+              </div>
+
+              {/* Curated Color Swatches */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {curatedColors.map((c) => {
+                  const isSelected = activeFabric.color.toLowerCase() === c.hex.toLowerCase();
+                  return (
+                    <button
+                      key={c.hex}
+                      onClick={() => setActiveFabric({ color: c.hex })}
+                      className={`w-5 h-5 rounded-full border transition-all relative ${
+                        isSelected
+                          ? 'scale-125 ring-2 ring-white border-black z-10 shadow-md'
+                          : 'border-zinc-700/80 hover:scale-110'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={`${c.name} (${c.hex}) — Instant 2D & 3D Recoloring`}
+                    >
+                      {isSelected && (
+                        <Check className="w-3 h-3 text-white absolute inset-0 m-auto stroke-[3]" />
+                      )}
+                    </button>
+                  );
+                })}
+
+                {/* Custom Color Input Picker */}
+                <div className="flex items-center gap-1 ml-1 pl-1 border-l border-zinc-700">
+                  <input
+                    type="color"
+                    value={activeFabric.color}
+                    onChange={(e) => setActiveFabric({ color: e.target.value })}
+                    className="w-5 h-5 rounded cursor-pointer border border-zinc-600 bg-transparent p-0"
+                    title="Choose Custom Color Hex"
+                  />
+                  <span className="text-[10px] font-mono text-zinc-400 font-bold">
+                    {activeFabric.color}
+                  </span>
+                </div>
+              </div>
+
+              {/* Instant Sync Indicator */}
+              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>Color dynamically rendered in CLO 3D avatar drape</span>
+              </div>
+
+              {/* Fabric Texture Presets */}
+              <div className="grid grid-cols-3 gap-1 pt-1">
+                {fabricPresets.map((fab) => (
+                  <button
+                    key={fab.name}
+                    onClick={() => setActiveFabric(fab)}
+                    className={`p-1 rounded text-[10px] font-bold text-center border transition-all ${
+                      activeFabric.name === fab.name
+                        ? 'bg-blue-600/30 border-blue-500 text-blue-300'
+                        : 'bg-zinc-800/60 border-zinc-700/60 hover:bg-zinc-700 text-zinc-400'
+                    }`}
+                  >
+                    {fab.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Sizing & Dimension Sliders ("size agisee pannura mathiri") */}
             <div className="p-3 border-b border-zinc-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
@@ -400,7 +761,7 @@ export const CollabUnifiedStudio: React.FC = () => {
                 </span>
                 <button
                   onClick={resetSloperDeltas}
-                  className="text-[10px] text-cyan-400 hover:text-cyan-300 hover:underline"
+                  className="text-[10px] text-cyan-400 hover:text-cyan-300 hover:underline font-semibold"
                 >
                   Reset Fit
                 </button>
@@ -409,7 +770,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               {/* Bust Delta Slider */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-zinc-400">Bust / Chest:</span>
+                  <span className="text-zinc-400">Bust / Chest Delta:</span>
                   <span className="font-mono font-bold text-cyan-300">
                     {sloperDeltas.bust > 0 ? `+${sloperDeltas.bust}` : sloperDeltas.bust} cm
                   </span>
@@ -428,7 +789,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               {/* Waist Delta Slider */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-zinc-400">Waist:</span>
+                  <span className="text-zinc-400">Waist Delta:</span>
                   <span className="font-mono font-bold text-cyan-300">
                     {sloperDeltas.waist > 0 ? `+${sloperDeltas.waist}` : sloperDeltas.waist} cm
                   </span>
@@ -466,7 +827,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               {/* Garment Length Delta Slider */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-zinc-400">Total Body Length:</span>
+                  <span className="text-zinc-400">Total Garment Length:</span>
                   <span className="font-mono font-bold text-cyan-300">
                     {sloperDeltas.length > 0 ? `+${sloperDeltas.length}` : sloperDeltas.length} cm
                   </span>
@@ -483,7 +844,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               </div>
             </div>
 
-            {/* Pattern Attributes & Seam Allowance */}
+            {/* 5. Pattern Attributes & Seam Allowance */}
             <div className="p-3 border-b border-zinc-800 space-y-2.5">
               <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
                 <Scissors className="w-3 h-3 text-cyan-400" />
@@ -547,7 +908,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               </div>
             </div>
 
-            {/* Pattern Piece Inventory & Live Measurements */}
+            {/* 6. Pattern Piece Inventory & Live Measurements */}
             <div className="p-3 border-b border-zinc-800 space-y-2">
               <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
                 <Ruler className="w-3 h-3 text-cyan-400" />
@@ -579,7 +940,7 @@ export const CollabUnifiedStudio: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Modals CTAs */}
+            {/* 7. Quick Modals CTAs */}
             <div className="p-3 mt-auto space-y-1.5">
               <button
                 onClick={() => setActiveModal('techPack')}

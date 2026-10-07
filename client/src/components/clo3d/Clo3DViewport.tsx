@@ -33,6 +33,8 @@ export const Clo3DViewport: React.FC = () => {
     activeFabric,
     selectedAvatarPose,
     garment,
+    currentSize,
+    sloperDeltas,
   } = useCADStore();
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(language, key);
@@ -41,12 +43,18 @@ export const Clo3DViewport: React.FC = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const skirtMeshRef = useRef<THREE.Mesh | null>(null);
-  const bodiceMeshRef = useRef<THREE.Mesh | null>(null);
   const avatarGroupRef = useRef<THREE.Group | null>(null);
   const leftArmGroupRef = useRef<THREE.Group | null>(null);
   const rightArmGroupRef = useRef<THREE.Group | null>(null);
-  const originalSkirtPositionsRef = useRef<Float32Array | null>(null);
+  const garmentGroupRef = useRef<THREE.Group | null>(null);
+  const simulatingMeshesRef = useRef<
+    Array<{
+      mesh: THREE.Mesh;
+      origPositions: Float32Array;
+      height: number;
+      intensity: number;
+    }>
+  >([]);
 
   // Camera Orbit State
   const isDraggingRef = useRef(false);
@@ -71,7 +79,7 @@ export const Clo3DViewport: React.FC = () => {
 
     // 1. Scene & Background (CLO 3D Studio Warm Gray Studio Gradient)
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#9499a3'); // Matches the soft warm gray background in the screenshot
+    scene.background = new THREE.Color('#9499a3'); // Matches the soft warm gray background
     sceneRef.current = scene;
 
     // 2. Camera
@@ -153,13 +161,13 @@ export const Clo3DViewport: React.FC = () => {
       metalness: 0.05,
     });
 
-    // Hair Material (Dark Brunette / Black Bun as in screenshot)
+    // Hair Material (Dark Brunette / Black Bun)
     const hairMaterial = new THREE.MeshStandardMaterial({
       color: 0x1f1917,
       roughness: 0.65,
     });
 
-    // Shoes Material (Black High Heels as in screenshot)
+    // Shoes Material (Black High Heels)
     const shoeMaterial = new THREE.MeshStandardMaterial({
       color: 0x111111,
       roughness: 0.3,
@@ -211,7 +219,7 @@ export const Clo3DViewport: React.FC = () => {
     pelvis.castShadow = true;
     avatarGroup.add(pelvis);
 
-    // Arms in A-Pose (Angled at ~32 degrees, hands extended)
+    // Arms in A-Pose
     const armAngle = 0.52; // radians (~30 deg)
 
     // Left Arm
@@ -299,70 +307,14 @@ export const Clo3DViewport: React.FC = () => {
 
     scene.add(avatarGroup);
 
-    // 7. Build Garment Meshes:
-    // A. Cropped Sleeveless Bodice Top (Light Cyan #a5f3fc)
-    const bodiceGeom = new THREE.CylinderGeometry(0.155, 0.138, 0.28, 36, 16, true);
-    bodiceGeom.scale(1.18, 1, 0.88);
-
-    // Bodice Material
-    const bodiceMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#a5f3fc'),
-      roughness: 0.4,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
-    });
-    const bodiceMesh = new THREE.Mesh(bodiceGeom, bodiceMat);
-    bodiceMesh.position.set(0, 1.28, 0);
-    bodiceMesh.castShadow = true;
-    scene.add(bodiceMesh);
-    bodiceMeshRef.current = bodiceMesh;
-
-    // B. Flared A-Line Skirt (White #f8fafc with soft drape folds)
-    // Parameterized cone/cylinder with high segment resolution for smooth drape waves
-    const skirtHeight = 0.46;
-    const skirtGeom = new THREE.CylinderGeometry(0.145, 0.38, skirtHeight, 64, 32, true);
-    skirtGeom.scale(1.15, 1, 0.95);
-
-    // Add gentle procedural drape flutes/folds into the skirt geometry
-    const posAttr = skirtGeom.attributes.position;
-    const vertex = new THREE.Vector3();
-    const origPositions = new Float32Array(posAttr.count * 3);
-
-    for (let i = 0; i < posAttr.count; i++) {
-      vertex.fromBufferAttribute(posAttr, i);
-      // Normalized height factor from top (waist=0) to hem (bottom=1)
-      const tHeight = 1.0 - (vertex.y + skirtHeight / 2) / skirtHeight;
-      const angle = Math.atan2(vertex.z, vertex.x);
-
-      // 8 Flutes / Drape Wave ripples radiating outwards
-      const ripple = Math.sin(angle * 7) * 0.024 * tHeight;
-      vertex.x += Math.cos(angle) * ripple;
-      vertex.z += Math.sin(angle) * ripple;
-
-      posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
-
-      origPositions[i * 3] = vertex.x;
-      origPositions[i * 3 + 1] = vertex.y;
-      origPositions[i * 3 + 2] = vertex.z;
-    }
-    skirtGeom.computeVertexNormals();
-    originalSkirtPositionsRef.current = origPositions;
-
-    const skirtMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#f8fafc'),
-      roughness: 0.48,
-      metalness: 0.02,
-      side: THREE.DoubleSide,
-    });
-    const skirtMesh = new THREE.Mesh(skirtGeom, skirtMat);
-    skirtMesh.position.set(0, 0.94, 0);
-    skirtMesh.castShadow = true;
-    scene.add(skirtMesh);
-    skirtMeshRef.current = skirtMesh;
+    // 7. Garment Root Group
+    const garmentGroup = new THREE.Group();
+    scene.add(garmentGroup);
+    garmentGroupRef.current = garmentGroup;
 
     // 8. Animation & Physics Simulation Loop
     let animationFrameId: number;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
     let frameCount = 0;
     let lastTime = performance.now();
 
@@ -379,33 +331,34 @@ export const Clo3DViewport: React.FC = () => {
         lastTime = now;
       }
 
-      // Live Cloth Drape Simulation Animation
+      // Live Cloth Drape Simulation Animation across all registered meshes
       const storeState = useCADStore.getState();
-      if (skirtMeshRef.current && originalSkirtPositionsRef.current) {
-        const positions = skirtMeshRef.current.geometry.attributes.position;
-        const orig = originalSkirtPositionsRef.current;
-        const count = positions.count;
+      if (storeState.isSimulating && simulatingMeshesRef.current.length > 0) {
+        const speed = 2.4;
+        const wind = storeState.windEnabled ? 0.024 : 0.007;
 
-        if (storeState.isSimulating) {
-          const speed = 2.4;
-          const wind = storeState.windEnabled ? 0.02 : 0.005;
+        simulatingMeshesRef.current.forEach(({ mesh, origPositions, height, intensity }) => {
+          if (!mesh.geometry || !mesh.geometry.attributes.position) return;
+          const positions = mesh.geometry.attributes.position;
+          const count = positions.count;
 
           for (let i = 0; i < count; i++) {
-            const ox = orig[i * 3];
-            const oy = orig[i * 3 + 1];
-            const oz = orig[i * 3 + 2];
+            const ox = origPositions[i * 3];
+            const oy = origPositions[i * 3 + 1];
+            const oz = origPositions[i * 3 + 2];
 
-            // Bottom hem swings more than waist
-            const hemFactor = Math.max(0, 0.23 - oy) / 0.46;
+            // Wave amplitude increases towards the bottom hem
+            const hemFactor = Math.max(0, 1.0 - (oy + height / 2) / height);
             const wave =
-              Math.sin(elapsedTime * speed + ox * 12 + oz * 10) * wind * hemFactor +
-              Math.cos(elapsedTime * 1.5 + oz * 8) * (wind * 0.5) * hemFactor;
+              (Math.sin(elapsedTime * speed + ox * 10 + oz * 8) * wind * hemFactor +
+                Math.cos(elapsedTime * 1.6 + oz * 7) * (wind * 0.5) * hemFactor) *
+              intensity;
 
-            positions.setXYZ(i, ox + wave * 0.5, oy, oz + wave);
+            positions.setXYZ(i, ox + wave * 0.4, oy, oz + wave);
           }
           positions.needsUpdate = true;
-          skirtMeshRef.current.geometry.computeVertexNormals();
-        }
+          mesh.geometry.computeVertexNormals();
+        });
       }
 
       // Render Scene
@@ -432,56 +385,442 @@ export const Clo3DViewport: React.FC = () => {
     };
   }, []);
 
-  // Update Surface Modes (Textured, Wireframe, Stress Heat Map, Translucent)
+  // Dynamically generate and drape 3D Garment whenever garment, size, color, surfaceMode, or sloper changes
   useEffect(() => {
-    if (!skirtMeshRef.current || !bodiceMeshRef.current) return;
+    if (!sceneRef.current || !garmentGroupRef.current) return;
+    const garmentGroup = garmentGroupRef.current;
 
-    const skirt = skirtMeshRef.current;
-    const bodice = bodiceMeshRef.current;
-
-    if (surfaceMode === 'wireframe') {
-      (skirt.material as THREE.MeshStandardMaterial).wireframe = true;
-      (bodice.material as THREE.MeshStandardMaterial).wireframe = true;
-      (skirt.material as THREE.MeshStandardMaterial).color.set('#38bdf8');
-      (bodice.material as THREE.MeshStandardMaterial).color.set('#0284c7');
-    } else if (surfaceMode === 'stressMap') {
-      // High-tension red at bust/waist, green optimum fit, blue loose hem
-      (skirt.material as THREE.MeshStandardMaterial).wireframe = false;
-      (bodice.material as THREE.MeshStandardMaterial).wireframe = false;
-      (skirt.material as THREE.MeshStandardMaterial).color.set('#22c55e'); // Green optimum
-      (bodice.material as THREE.MeshStandardMaterial).color.set('#f59e0b'); // Amber snug
-    } else if (surfaceMode === 'translucent') {
-      (skirt.material as THREE.MeshStandardMaterial).wireframe = false;
-      (bodice.material as THREE.MeshStandardMaterial).wireframe = false;
-      (skirt.material as THREE.MeshStandardMaterial).transparent = true;
-      (skirt.material as THREE.MeshStandardMaterial).opacity = 0.5;
-      (bodice.material as THREE.MeshStandardMaterial).transparent = true;
-      (bodice.material as THREE.MeshStandardMaterial).opacity = 0.5;
-    } else {
-      // Default Textured
-      (skirt.material as THREE.MeshStandardMaterial).wireframe = false;
-      (bodice.material as THREE.MeshStandardMaterial).wireframe = false;
-      (skirt.material as THREE.MeshStandardMaterial).transparent = false;
-      (skirt.material as THREE.MeshStandardMaterial).opacity = 1.0;
-      (bodice.material as THREE.MeshStandardMaterial).transparent = false;
-      (bodice.material as THREE.MeshStandardMaterial).opacity = 1.0;
-      (skirt.material as THREE.MeshStandardMaterial).color.set('#f8fafc');
-      (bodice.material as THREE.MeshStandardMaterial).color.set(activeFabric.color);
+    // 1. Clean up existing garment meshes & materials
+    while (garmentGroup.children.length > 0) {
+      const child = garmentGroup.children[0];
+      garmentGroup.remove(child);
+      if ((child as THREE.Mesh).geometry) {
+        (child as THREE.Mesh).geometry.dispose();
+      }
+      if ((child as THREE.Mesh).material) {
+        const mat = (child as THREE.Mesh).material;
+        if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+        else mat.dispose();
+      }
     }
-  }, [surfaceMode, activeFabric.color]);
+    simulatingMeshesRef.current = [];
 
-  // Update Avatar & Garment Visibility
+    garmentGroup.visible = garmentVisible;
+    if (!garmentVisible) return;
+
+    // 2. Identify Garment Archetype
+    const nameLower = (garment.name || '').toLowerCase();
+    const catLower = (garment.category || '').toLowerCase();
+
+    const isPant =
+      catLower.includes('trouser') ||
+      catLower.includes('pant') ||
+      catLower.includes('jean') ||
+      nameLower.includes('trouser') ||
+      nameLower.includes('pant') ||
+      nameLower.includes('jean') ||
+      nameLower.includes('chino') ||
+      nameLower.includes('bootcut');
+
+    const isShirt =
+      catLower.includes('shirt') ||
+      catLower.includes('polo') ||
+      catLower.includes('tshirt') ||
+      nameLower.includes('shirt') ||
+      nameLower.includes('polo') ||
+      nameLower.includes('t-shirt') ||
+      nameLower.includes('tshirt');
+
+    const isJacket =
+      catLower.includes('jacket') ||
+      catLower.includes('blazer') ||
+      catLower.includes('coat') ||
+      nameLower.includes('jacket') ||
+      nameLower.includes('blazer') ||
+      nameLower.includes('coat') ||
+      nameLower.includes('bomber');
+
+    const isSkirt = nameLower.includes('skirt') || catLower.includes('skirt');
+    const isDress = nameLower.includes('dress') || catLower.includes('dress');
+
+    // 3. Proportional Scaling based on Current Size & Sloper Sizing Deltas
+    const sizeScaleMap: Record<string, number> = {
+      XS: 0.94,
+      S: 0.97,
+      M: 1.0,
+      L: 1.035,
+      XL: 1.075,
+      XXL: 1.12,
+    };
+    const baseScale = sizeScaleMap[currentSize] || 1.0;
+    const bustScale = baseScale * (1 + (sloperDeltas?.bust || 0) * 0.007);
+    const waistScale = baseScale * (1 + (sloperDeltas?.waist || 0) * 0.007);
+    const lengthScale = 1 + (sloperDeltas?.length || 0) * 0.005;
+
+    // Helper to generate Material based on active surfaceMode
+    const createMat = (colorHex: string, isPrimary: boolean = true) => {
+      if (surfaceMode === 'wireframe') {
+        return new THREE.MeshStandardMaterial({
+          color: isPrimary ? '#38bdf8' : '#0284c7',
+          wireframe: true,
+          side: THREE.DoubleSide,
+        });
+      }
+      if (surfaceMode === 'stressMap') {
+        return new THREE.MeshStandardMaterial({
+          color: isPrimary ? (isPant ? '#22c55e' : '#f59e0b') : '#38bdf8',
+          roughness: 0.45,
+          side: THREE.DoubleSide,
+        });
+      }
+      if (surfaceMode === 'translucent') {
+        return new THREE.MeshStandardMaterial({
+          color: new THREE.Color(colorHex),
+          transparent: true,
+          opacity: 0.52,
+          roughness: 0.45,
+          metalness: 0.04,
+          side: THREE.DoubleSide,
+        });
+      }
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color(colorHex),
+        roughness: 0.46,
+        metalness: 0.04,
+        side: THREE.DoubleSide,
+      });
+    };
+
+    const primaryColor = activeFabric.color;
+
+    // Helper to register mesh for cloth physics simulation
+    const registerClothSimulation = (
+      mesh: THREE.Mesh,
+      height: number,
+      intensity: number = 1.0
+    ) => {
+      const posAttr = mesh.geometry.attributes.position;
+      const origPositions = new Float32Array(posAttr.count * 3);
+      for (let i = 0; i < posAttr.count; i++) {
+        origPositions[i * 3] = posAttr.getX(i);
+        origPositions[i * 3 + 1] = posAttr.getY(i);
+        origPositions[i * 3 + 2] = posAttr.getZ(i);
+      }
+      simulatingMeshesRef.current.push({
+        mesh,
+        origPositions,
+        height,
+        intensity,
+      });
+    };
+
+    // ==============================================================
+    // A. PANTS / TROUSERS / JEANS ARCHETYPE
+    // ==============================================================
+    if (isPant) {
+      // 1. Waistband & Pelvis Area
+      const wbGeom = new THREE.CylinderGeometry(0.144 * waistScale, 0.168 * waistScale, 0.18, 36, 16, true);
+      wbGeom.scale(1.20, 1, 0.90);
+      const wbMesh = new THREE.Mesh(wbGeom, createMat(primaryColor, true));
+      wbMesh.position.set(0, 1.04, 0);
+      wbMesh.castShadow = true;
+      garmentGroup.add(wbMesh);
+
+      // 2. Left & Right Trouser Legs
+      const legHeight = 0.84 * lengthScale;
+      const topR = 0.082 * waistScale;
+      const bottomR = nameLower.includes('bootcut') ? 0.072 : 0.056;
+
+      [-0.095, 0.095].forEach((xPos) => {
+        const legGeom = new THREE.CylinderGeometry(topR, bottomR, legHeight, 36, 32, true);
+        const posAttr = legGeom.attributes.position;
+        const v = new THREE.Vector3();
+        for (let i = 0; i < posAttr.count; i++) {
+          v.fromBufferAttribute(posAttr, i);
+          // Subtle crease line along front for sharp trouser styling
+          if (v.z > 0.02) {
+            v.z += (1 - Math.min(1, Math.abs(v.x) / 0.07)) * 0.005;
+          }
+          // Knee ripple around mid-height
+          const relY = v.y / legHeight;
+          if (relY > -0.15 && relY < 0.15) {
+            v.z += Math.sin(relY * 20) * 0.003;
+          }
+          posAttr.setXYZ(i, v.x, v.y, v.z);
+        }
+        legGeom.computeVertexNormals();
+
+        const legMesh = new THREE.Mesh(legGeom, createMat(primaryColor, true));
+        legMesh.position.set(xPos, 0.58, 0);
+        legMesh.castShadow = true;
+        garmentGroup.add(legMesh);
+        registerClothSimulation(legMesh, legHeight, 0.7);
+      });
+
+      // 3. Front Fly Detail
+      const flyGeom = new THREE.BoxGeometry(0.016, 0.13, 0.005);
+      const flyMesh = new THREE.Mesh(flyGeom, createMat(primaryColor, true));
+      flyMesh.position.set(0, 1.05, 0.145 * waistScale);
+      garmentGroup.add(flyMesh);
+
+      // 4. Coordinated Upper Top (Ivory heather camisole tucked into waistband)
+      const topGeom = new THREE.CylinderGeometry(0.148 * bustScale, 0.136 * waistScale, 0.28, 36, 16, true);
+      topGeom.scale(1.18, 1, 0.86);
+      const topMesh = new THREE.Mesh(topGeom, createMat('#f1f5f9', false));
+      topMesh.position.set(0, 1.28, 0);
+      topMesh.castShadow = true;
+      garmentGroup.add(topMesh);
+    }
+    // ==============================================================
+    // B. SHIRT / POLO / T-SHIRT ARCHETYPE
+    // ==============================================================
+    else if (isShirt) {
+      // 1. Shirt Torso
+      const shirtHeight = 0.42 * lengthScale;
+      const torsoGeom = new THREE.CylinderGeometry(
+        0.164 * bustScale,
+        0.156 * waistScale,
+        shirtHeight,
+        40,
+        24,
+        true
+      );
+      torsoGeom.scale(1.20, 1, 0.88);
+      const torsoMesh = new THREE.Mesh(torsoGeom, createMat(primaryColor, true));
+      torsoMesh.position.set(0, 1.25, 0);
+      torsoMesh.castShadow = true;
+      garmentGroup.add(torsoMesh);
+      registerClothSimulation(torsoMesh, shirtHeight, 0.8);
+
+      // 2. Button Placket & Pearl Buttons
+      const placketGeom = new THREE.BoxGeometry(0.024, shirtHeight * 0.94, 0.006);
+      const placketMesh = new THREE.Mesh(placketGeom, createMat(primaryColor, true));
+      placketMesh.position.set(0, 1.25, 0.144 * bustScale);
+      garmentGroup.add(placketMesh);
+
+      const buttonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      [-0.14, -0.06, 0.02, 0.10, 0.17].forEach((yOff) => {
+        const btnGeom = new THREE.SphereGeometry(0.005, 8, 8);
+        const btn = new THREE.Mesh(btnGeom, buttonMat);
+        btn.position.set(0, 1.25 + yOff, 0.148 * bustScale);
+        garmentGroup.add(btn);
+      });
+
+      // 3. Collar Stand & Leaf
+      const collarGeom = new THREE.CylinderGeometry(0.082, 0.088, 0.055, 32, 8, true);
+      collarGeom.scale(1.1, 1, 1.05);
+      const collarMesh = new THREE.Mesh(collarGeom, createMat(primaryColor, true));
+      collarMesh.position.set(0, 1.46, 0);
+      garmentGroup.add(collarMesh);
+
+      // 4. Left & Right Sleeves
+      const isLongSleeve = !nameLower.includes('t-shirt') && !nameLower.includes('tshirt') && !nameLower.includes('polo');
+      const sleeveLen = isLongSleeve ? 0.44 : 0.22;
+      const sleeveTopR = 0.048 * bustScale;
+      const sleeveBotR = isLongSleeve ? 0.036 : 0.042;
+      const armAngle = 0.52;
+
+      // Left Sleeve
+      const leftSleeveGeom = new THREE.CylinderGeometry(sleeveTopR, sleeveBotR, sleeveLen, 24, 16, true);
+      const leftSleeveMesh = new THREE.Mesh(leftSleeveGeom, createMat(primaryColor, true));
+      leftSleeveMesh.position.set(
+        0.19 + Math.sin(armAngle) * (sleeveLen / 2),
+        1.42 - Math.cos(armAngle) * (sleeveLen / 2),
+        0
+      );
+      leftSleeveMesh.rotation.z = -armAngle;
+      leftSleeveMesh.castShadow = true;
+      garmentGroup.add(leftSleeveMesh);
+      registerClothSimulation(leftSleeveMesh, sleeveLen, 0.5);
+
+      // Right Sleeve
+      const rightSleeveGeom = new THREE.CylinderGeometry(sleeveTopR, sleeveBotR, sleeveLen, 24, 16, true);
+      const rightSleeveMesh = new THREE.Mesh(rightSleeveGeom, createMat(primaryColor, true));
+      rightSleeveMesh.position.set(
+        -0.19 - Math.sin(armAngle) * (sleeveLen / 2),
+        1.42 - Math.cos(armAngle) * (sleeveLen / 2),
+        0
+      );
+      rightSleeveMesh.rotation.z = armAngle;
+      rightSleeveMesh.castShadow = true;
+      garmentGroup.add(rightSleeveMesh);
+      registerClothSimulation(rightSleeveMesh, sleeveLen, 0.5);
+
+      // 5. Coordinated Tailored Pants on bottom (Dark Charcoal #1e293b)
+      [-0.095, 0.095].forEach((xPos) => {
+        const trouserGeom = new THREE.CylinderGeometry(0.08, 0.055, 0.84, 24, 16, true);
+        const trouserMesh = new THREE.Mesh(trouserGeom, createMat('#1e293b', false));
+        trouserMesh.position.set(xPos, 0.58, 0);
+        trouserMesh.castShadow = true;
+        garmentGroup.add(trouserMesh);
+      });
+    }
+    // ==============================================================
+    // C. JACKET / OUTERWEAR ARCHETYPE
+    // ==============================================================
+    else if (isJacket) {
+      const jacketHeight = 0.48 * lengthScale;
+      const jacketGeom = new THREE.CylinderGeometry(
+        0.174 * bustScale,
+        0.162 * waistScale,
+        jacketHeight,
+        40,
+        24,
+        true
+      );
+      jacketGeom.scale(1.22, 1, 0.92);
+      const jacketMesh = new THREE.Mesh(jacketGeom, createMat(primaryColor, true));
+      jacketMesh.position.set(0, 1.22, 0);
+      jacketMesh.castShadow = true;
+      garmentGroup.add(jacketMesh);
+      registerClothSimulation(jacketMesh, jacketHeight, 0.6);
+
+      // Lapels
+      const lapelGeom = new THREE.BoxGeometry(0.08, 0.28, 0.008);
+      const leftLapel = new THREE.Mesh(lapelGeom, createMat(primaryColor, true));
+      leftLapel.position.set(0.05, 1.32, 0.155 * bustScale);
+      leftLapel.rotation.z = -0.15;
+      garmentGroup.add(leftLapel);
+
+      const rightLapel = new THREE.Mesh(lapelGeom, createMat(primaryColor, true));
+      rightLapel.position.set(-0.05, 1.32, 0.155 * bustScale);
+      rightLapel.rotation.z = 0.15;
+      garmentGroup.add(rightLapel);
+
+      // Sleeves
+      const armAngle = 0.52;
+      const sleeveLen = 0.46;
+      [-1, 1].forEach((dir) => {
+        const sGeom = new THREE.CylinderGeometry(0.052 * bustScale, 0.038, sleeveLen, 24, 16, true);
+        const sMesh = new THREE.Mesh(sGeom, createMat(primaryColor, true));
+        sMesh.position.set(
+          dir * (0.19 + Math.sin(armAngle) * (sleeveLen / 2)),
+          1.42 - Math.cos(armAngle) * (sleeveLen / 2),
+          0
+        );
+        sMesh.rotation.z = -dir * armAngle;
+        sMesh.castShadow = true;
+        garmentGroup.add(sMesh);
+        registerClothSimulation(sMesh, sleeveLen, 0.4);
+      });
+
+      // Coordinated Dark Trousers
+      [-0.095, 0.095].forEach((xPos) => {
+        const trouserGeom = new THREE.CylinderGeometry(0.08, 0.055, 0.84, 24, 16, true);
+        const trouserMesh = new THREE.Mesh(trouserGeom, createMat('#18181b', false));
+        trouserMesh.position.set(xPos, 0.58, 0);
+        trouserMesh.castShadow = true;
+        garmentGroup.add(trouserMesh);
+      });
+    }
+    // ==============================================================
+    // D. FLARED SKIRT ARCHETYPE
+    // ==============================================================
+    else if (isSkirt) {
+      const skirtHeight = 0.46 * lengthScale;
+      const skirtGeom = new THREE.CylinderGeometry(0.145 * waistScale, 0.38, skirtHeight, 64, 32, true);
+      skirtGeom.scale(1.15, 1, 0.95);
+
+      // 8 Drape wave flutes radiating downwards
+      const posAttr = skirtGeom.attributes.position;
+      const vertex = new THREE.Vector3();
+      for (let i = 0; i < posAttr.count; i++) {
+        vertex.fromBufferAttribute(posAttr, i);
+        const tHeight = 1.0 - (vertex.y + skirtHeight / 2) / skirtHeight;
+        const angle = Math.atan2(vertex.z, vertex.x);
+        const ripple = Math.sin(angle * 7) * 0.024 * tHeight;
+        vertex.x += Math.cos(angle) * ripple;
+        vertex.z += Math.sin(angle) * ripple;
+        posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
+      }
+      skirtGeom.computeVertexNormals();
+
+      const skirtMesh = new THREE.Mesh(skirtGeom, createMat(primaryColor, true));
+      skirtMesh.position.set(0, 0.94, 0);
+      skirtMesh.castShadow = true;
+      garmentGroup.add(skirtMesh);
+      registerClothSimulation(skirtMesh, skirtHeight, 1.0);
+
+      // Coordinated fitted top
+      const topGeom = new THREE.CylinderGeometry(0.155 * bustScale, 0.138 * waistScale, 0.28, 36, 16, true);
+      topGeom.scale(1.18, 1, 0.88);
+      const topMesh = new THREE.Mesh(topGeom, createMat('#f8fafc', false));
+      topMesh.position.set(0, 1.28, 0);
+      topMesh.castShadow = true;
+      garmentGroup.add(topMesh);
+    }
+    // ==============================================================
+    // E. DRESS ARCHETYPE
+    // ==============================================================
+    else if (isDress) {
+      const dressHeight = 0.72 * lengthScale;
+      const dressGeom = new THREE.CylinderGeometry(
+        0.156 * bustScale,
+        0.22,
+        dressHeight,
+        54,
+        32,
+        true
+      );
+      dressGeom.scale(1.18, 1, 0.90);
+      const dressMesh = new THREE.Mesh(dressGeom, createMat(primaryColor, true));
+      dressMesh.position.set(0, 1.05, 0);
+      dressMesh.castShadow = true;
+      garmentGroup.add(dressMesh);
+      registerClothSimulation(dressMesh, dressHeight, 0.9);
+    }
+    // ==============================================================
+    // F. BASIC BODICE ARCHETYPE (Default)
+    // ==============================================================
+    else {
+      // Cropped Bodice Top
+      const bodiceGeom = new THREE.CylinderGeometry(0.155 * bustScale, 0.138 * waistScale, 0.28, 36, 16, true);
+      bodiceGeom.scale(1.18, 1, 0.88);
+      const bodiceMesh = new THREE.Mesh(bodiceGeom, createMat(primaryColor, true));
+      bodiceMesh.position.set(0, 1.28, 0);
+      bodiceMesh.castShadow = true;
+      garmentGroup.add(bodiceMesh);
+      registerClothSimulation(bodiceMesh, 0.28, 0.4);
+
+      // Coordinated Flared Skirt
+      const skirtHeight = 0.46;
+      const skirtGeom = new THREE.CylinderGeometry(0.145, 0.38, skirtHeight, 64, 32, true);
+      skirtGeom.scale(1.15, 1, 0.95);
+      const posAttr = skirtGeom.attributes.position;
+      const vertex = new THREE.Vector3();
+      for (let i = 0; i < posAttr.count; i++) {
+        vertex.fromBufferAttribute(posAttr, i);
+        const tHeight = 1.0 - (vertex.y + skirtHeight / 2) / skirtHeight;
+        const angle = Math.atan2(vertex.z, vertex.x);
+        const ripple = Math.sin(angle * 7) * 0.024 * tHeight;
+        vertex.x += Math.cos(angle) * ripple;
+        vertex.z += Math.sin(angle) * ripple;
+        posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
+      }
+      skirtGeom.computeVertexNormals();
+
+      const skirtMesh = new THREE.Mesh(skirtGeom, createMat('#f8fafc', false));
+      skirtMesh.position.set(0, 0.94, 0);
+      skirtMesh.castShadow = true;
+      garmentGroup.add(skirtMesh);
+      registerClothSimulation(skirtMesh, skirtHeight, 1.0);
+    }
+  }, [
+    garment.name,
+    garment.category,
+    currentSize,
+    activeFabric.color,
+    surfaceMode,
+    sloperDeltas,
+    garmentVisible,
+  ]);
+
+  // Update Avatar Visibility
   useEffect(() => {
     if (avatarGroupRef.current) {
       avatarGroupRef.current.visible = avatarVisible;
     }
-    if (skirtMeshRef.current) {
-      skirtMeshRef.current.visible = garmentVisible;
-    }
-    if (bodiceMeshRef.current) {
-      bodiceMeshRef.current.visible = garmentVisible;
-    }
-  }, [avatarVisible, garmentVisible]);
+  }, [avatarVisible]);
 
   // Update Avatar Pose based on selectedAvatarPose
   useEffect(() => {
