@@ -2355,3 +2355,515 @@ export function createMensTailoredSuitJacket(): Garment {
 
 
 
+
+// ==========================================
+// 1. Womens Double-Breasted Blazer (10 Pcs)
+// ==========================================
+export function createDoubleBreastedBlazer(): Garment {
+  const frontLeft: PatternComponent = {
+    id: 'db-front-left',
+    pieceCode: 'DB-FRT-L',
+    name: 'Front Left Peak Lapel (1. 1)',
+    cutInstruction: 'Cut 1 in Shell',
+    quantity: 1,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 60, y: 60 }, end: { x: 260, y: 60 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 25 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 50, y: 0 }, { x: 120, y: 0 }, { x: 200, y: 10 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 330, y: 20 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 340, y: 60 }, { x: 310, y: 105 }, { x: 280, y: 125 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 125 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 25 }] },
+    ],
+    internals: [
+      { id: 'db-button-wrap', name: 'DB Button Line', type: 'line', points: [{ x: 140, y: 40 }, { x: 140, y: 110 }], color: '#facc15' },
+    ],
+    notches: [{ x: 200, y: 10 }, { x: 330, y: 20 }],
+    labels: [{ text: 'DB FRONT L', position: { x: 120, y: 55 }, type: 'title' }],
+    measurements: { length: 72.0, halfChest: 52.0 },
+  };
+
+  const backPanel: PatternComponent = {
+    id: 'db-back',
+    pieceCode: 'DB-BACK',
+    name: 'Jacket Back with Vent (2. 2)',
+    cutInstruction: 'Cut 2 in Shell',
+    quantity: 2,
+    offset: { x: 580, y: 140 },
+    grainline: { start: { x: 60, y: 55 }, end: { x: 250, y: 55 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 15 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 40, y: 0 }, { x: 110, y: 0 }, { x: 160, y: 0 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 320, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 330, y: 50 }, { x: 315, y: 95 }, { x: 290, y: 120 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 120 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 15 }] },
+    ],
+    notches: [{ x: 320, y: 15 }, { x: 160, y: 120 }],
+    labels: [{ text: 'DB BACK', position: { x: 130, y: 45 }, type: 'title' }],
+    measurements: { length: 70.0, halfChest: 50.0 },
+  };
+
+  const topSleeve: PatternComponent = {
+    id: 'db-top-sleeve',
+    pieceCode: 'DB-SLEEVE-TOP',
+    name: 'Top Sleeve Panel (3. 2)',
+    cutInstruction: 'Cut 2 Pair',
+    quantity: 2,
+    offset: { x: 230, y: 290 },
+    grainline: { start: { x: 40, y: 50 }, end: { x: 200, y: 50 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'sleeve-cap', points: [{ x: 0, y: 15 }] },
+      { type: 'L', zone: 'sleeve-seam', points: [{ x: 160, y: 0 }] },
+      { type: 'C', zone: 'sleeve-cap', points: [{ x: 210, y: 15 }, { x: 250, y: 45 }, { x: 245, y: 85 }] },
+      { type: 'L', zone: 'sleeve-hem', points: [{ x: 0, y: 105 }] },
+      { type: 'Z', zone: 'sleeve-seam', points: [{ x: 0, y: 15 }] },
+    ],
+    notches: [{ x: 160, y: 0 }],
+    labels: [{ text: 'DB SLEEVE TOP', position: { x: 100, y: 45 }, type: 'title' }],
+    measurements: { length: 62.0 },
+  };
+
+  const peakCollar: PatternComponent = {
+    id: 'db-collar',
+    pieceCode: 'DB-COLLAR',
+    name: 'Peak Lapel Collar (4. 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    offset: { x: 580, y: 290 },
+    grainline: { start: { x: 20, y: 20 }, end: { x: 120, y: 20 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 10 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 40, y: 0 }, { x: 100, y: 0 }, { x: 140, y: 10 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 130, y: 45 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 90, y: 35 }, { x: 40, y: 35 }, { x: 0, y: 45 }] },
+      { type: 'Z', zone: 'neck', points: [{ x: 0, y: 10 }] },
+    ],
+    notches: [{ x: 70, y: 0 }],
+    labels: [{ text: 'PEAK COLLAR', position: { x: 50, y: 22 }, type: 'title' }],
+    measurements: { length: 42.0 },
+  };
+
+  return {
+    id: 'garment-db-blazer-007',
+    name: 'Womens Double-Breasted Blazer',
+    category: 'jacket',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontLeft, backPanel, topSleeve, peakCollar],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 2. 5-Pocket Raw Denim Jeans (8 Pcs)
+// ==========================================
+export function createDenimJeans(): Garment {
+  const frontLeg: PatternComponent = {
+    id: 'jeans-front-leg',
+    pieceCode: 'JEANS-FRT',
+    name: 'Front Leg with Scoop Pocket (1. 2)',
+    cutInstruction: 'Cut 2 in Denim',
+    quantity: 2,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 50, y: 40 }, end: { x: 280, y: 40 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 20 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 80, y: 0 }] },
+      { type: 'L', zone: 'hip', points: [{ x: 340, y: 10 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 340, y: 95 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 90 }] },
+      { type: 'Z', zone: 'crotch', points: [{ x: 0, y: 20 }] },
+    ],
+    internals: [
+      { id: 'scoop-pocket-curve', name: 'Scoop Pocket Opening', type: 'pocket', points: [{ x: 20, y: 15 }, { x: 65, y: 25 }, { x: 75, y: 0 }], color: '#facc15' },
+      { id: 'coin-pocket-welt', name: 'Coin Pocket Welt', type: 'pocket', points: [{ x: 30, y: 10 }, { x: 55, y: 10 }, { x: 55, y: 25 }, { x: 30, y: 25 }, { x: 30, y: 10 }], closed: true, color: '#facc15' },
+    ],
+    notches: [{ x: 80, y: 0 }, { x: 340, y: 10 }],
+    labels: [{ text: 'JEANS FRONT', position: { x: 150, y: 45 }, type: 'title' }],
+    measurements: { length: 104.0, inseam: 81.0, waist: 76.0 },
+  };
+
+  const backLeg: PatternComponent = {
+    id: 'jeans-back-leg',
+    pieceCode: 'JEANS-BACK',
+    name: 'Back Leg with Yoke Seam (2. 2)',
+    cutInstruction: 'Cut 2 in Denim',
+    quantity: 2,
+    offset: { x: 230, y: 280 },
+    grainline: { start: { x: 50, y: 40 }, end: { x: 280, y: 40 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 25 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 90, y: 0 }] },
+      { type: 'L', zone: 'hip', points: [{ x: 350, y: 15 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 350, y: 105 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 95 }] },
+      { type: 'Z', zone: 'crotch', points: [{ x: 0, y: 25 }] },
+    ],
+    internals: [
+      { id: 'back-yoke-line', name: 'Yoke Seam Line', type: 'line', points: [{ x: 10, y: 20 }, { x: 85, y: 5 }], color: '#facc15' },
+      { id: 'back-patch-pocket', name: 'Back Patch Pocket Placement', type: 'pocket', points: [{ x: 35, y: 28 }, { x: 75, y: 28 }, { x: 75, y: 65 }, { x: 55, y: 78 }, { x: 35, y: 65 }, { x: 35, y: 28 }], closed: true, color: '#facc15' },
+    ],
+    notches: [{ x: 90, y: 0 }],
+    labels: [{ text: 'JEANS BACK', position: { x: 160, y: 45 }, type: 'title' }],
+    measurements: { length: 106.0, inseam: 81.0 },
+  };
+
+  const waistband: PatternComponent = {
+    id: 'jeans-waistband',
+    pieceCode: 'JEANS-WB',
+    name: 'Contoured Denim Waistband (3. 2)',
+    cutInstruction: 'Cut 2 in Denim',
+    quantity: 2,
+    offset: { x: 620, y: 140 },
+    grainline: { start: { x: 20, y: 15 }, end: { x: 260, y: 15 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 280, y: 0 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 280, y: 35 }] },
+      { type: 'L', zone: 'waist', points: [{ x: 0, y: 35 }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [{ x: 140, y: 0 }],
+    labels: [{ text: 'DENIM WAISTBAND', position: { x: 100, y: 20 }, type: 'title' }],
+    measurements: { length: 82.0 },
+  };
+
+  return {
+    id: 'garment-denim-jeans-008',
+    name: '5-Pocket Raw Denim Jeans',
+    category: 'trouser',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontLeg, backLeg, waistband],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 3. A-Line Flared Skirt (4 Pcs)
+// ==========================================
+export function createFlaredSkirt(): Garment {
+  const frontPanel: PatternComponent = {
+    id: 'skirt-front-flare',
+    pieceCode: 'SKIRT-FRT',
+    name: 'Front Flared Panel (1. 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 40, y: 50 }, end: { x: 220, y: 50 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 10 }] },
+      { type: 'C', zone: 'waist', points: [{ x: 50, y: 0 }, { x: 100, y: 0 }, { x: 150, y: 10 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 260, y: 110 }] },
+      { type: 'C', zone: 'hem', points: [{ x: 150, y: 125 }, { x: 50, y: 125 }, { x: 0, y: 110 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 10 }] },
+    ],
+    notches: [{ x: 75, y: 0 }],
+    labels: [{ text: 'SKIRT FRONT', position: { x: 80, y: 45 }, type: 'title' }],
+    measurements: { length: 58.0, waist: 68.0 },
+  };
+
+  const backPanel: PatternComponent = {
+    id: 'skirt-back-flare',
+    pieceCode: 'SKIRT-BACK',
+    name: 'Back Flared Panel with Zip (2. 2)',
+    cutInstruction: 'Cut 2 in Shell',
+    quantity: 2,
+    offset: { x: 540, y: 140 },
+    grainline: { start: { x: 40, y: 50 }, end: { x: 220, y: 50 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 12 }] },
+      { type: 'C', zone: 'waist', points: [{ x: 50, y: 2 }, { x: 100, y: 2 }, { x: 150, y: 12 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 260, y: 112 }] },
+      { type: 'C', zone: 'hem', points: [{ x: 150, y: 127 }, { x: 50, y: 127 }, { x: 0, y: 112 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 12 }] },
+    ],
+    notches: [{ x: 75, y: 2 }],
+    labels: [{ text: 'SKIRT BACK', position: { x: 80, y: 45 }, type: 'title' }],
+    measurements: { length: 58.0, waist: 68.0 },
+  };
+
+  return {
+    id: 'garment-flared-skirt-009',
+    name: 'A-Line Flared Skirt',
+    category: 'skirt',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontPanel, backPanel],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 4. Classic Sheath Dress (6 Pcs)
+// ==========================================
+export function createSheathDress(): Garment {
+  const frontDress: PatternComponent = {
+    id: 'sheath-front',
+    pieceCode: 'DRESS-FRT',
+    name: 'Front Fitted Sheath Body (1. 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 50, y: 60 }, end: { x: 300, y: 60 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 25 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 40, y: 0 }, { x: 90, y: 0 }, { x: 140, y: 10 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 220, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 230, y: 45 }, { x: 215, y: 80 }, { x: 195, y: 100 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 380, y: 100 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 380, y: 30 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 25 }] },
+    ],
+    internals: [
+      { id: 'bust-dart-front', name: 'French Bust Dart', type: 'dart', points: [{ x: 110, y: 30 }, { x: 150, y: 60 }], color: '#facc15' },
+    ],
+    notches: [{ x: 140, y: 10 }, { x: 220, y: 15 }],
+    labels: [{ text: 'SHEATH FRONT', position: { x: 160, y: 55 }, type: 'title' }],
+    measurements: { length: 102.0, bust: 90.0, waist: 72.0 },
+  };
+
+  const backDress: PatternComponent = {
+    id: 'sheath-back',
+    pieceCode: 'DRESS-BACK',
+    name: 'Back Sheath with Vent (2. 2)',
+    cutInstruction: 'Cut 2 in Shell',
+    quantity: 2,
+    offset: { x: 640, y: 140 },
+    grainline: { start: { x: 50, y: 60 }, end: { x: 300, y: 60 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 15 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 40, y: 5 }, { x: 90, y: 5 }, { x: 140, y: 12 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 220, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 230, y: 45 }, { x: 215, y: 80 }, { x: 195, y: 100 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 380, y: 100 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 380, y: 20 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 15 }] },
+    ],
+    notches: [{ x: 140, y: 12 }, { x: 220, y: 15 }],
+    labels: [{ text: 'SHEATH BACK', position: { x: 160, y: 55 }, type: 'title' }],
+    measurements: { length: 102.0 },
+  };
+
+  return {
+    id: 'garment-sheath-dress-010',
+    name: 'Pencil Sheath Dress',
+    category: 'dress',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontDress, backDress],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 5. Classic Trench Coat (14 Pcs)
+// ==========================================
+export function createTrenchCoat(): Garment {
+  const frontPanel: PatternComponent = {
+    id: 'trench-front',
+    pieceCode: 'TRENCH-FRT',
+    name: 'Trench Double-Breasted Front (1. 2)',
+    cutInstruction: 'Cut 2 in Gabardine',
+    quantity: 2,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 60, y: 65 }, end: { x: 300, y: 65 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 25 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 60, y: 0 }, { x: 140, y: 0 }, { x: 220, y: 10 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 350, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 360, y: 55 }, { x: 335, y: 100 }, { x: 300, y: 125 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 130 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 25 }] },
+    ],
+    internals: [
+      { id: 'gun-flap-line', name: 'Gun Flap Storm Seam', type: 'line', points: [{ x: 100, y: 20 }, { x: 200, y: 20 }], color: '#facc15' },
+    ],
+    notches: [{ x: 220, y: 10 }, { x: 350, y: 15 }],
+    labels: [{ text: 'TRENCH FRONT', position: { x: 160, y: 60 }, type: 'title' }],
+    measurements: { length: 110.0, halfChest: 58.0 },
+  };
+
+  const backPanel: PatternComponent = {
+    id: 'trench-back',
+    pieceCode: 'TRENCH-BACK',
+    name: 'Trench Vented Storm Back (2. 2)',
+    cutInstruction: 'Cut 2 in Gabardine',
+    quantity: 2,
+    offset: { x: 610, y: 140 },
+    grainline: { start: { x: 60, y: 60 }, end: { x: 300, y: 60 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 15 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 50, y: 0 }, { x: 120, y: 0 }, { x: 180, y: 0 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 340, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 350, y: 50 }, { x: 335, y: 95 }, { x: 305, y: 120 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 125 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 15 }] },
+    ],
+    notches: [{ x: 180, y: 0 }, { x: 340, y: 15 }],
+    labels: [{ text: 'TRENCH BACK', position: { x: 160, y: 55 }, type: 'title' }],
+    measurements: { length: 110.0 },
+  };
+
+  return {
+    id: 'garment-trench-coat-011',
+    name: 'Classic Trench Coat',
+    category: 'outerwear',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontPanel, backPanel],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 6. MA-1 Flight Bomber Jacket (8 Pcs)
+// ==========================================
+export function createBomberJacket(): Garment {
+  const frontPanel: PatternComponent = {
+    id: 'bomber-front',
+    pieceCode: 'BOMBER-FRT',
+    name: 'Bomber Front Zip Body (1. 2)',
+    cutInstruction: 'Cut 2 in Nylon',
+    quantity: 2,
+    offset: { x: 230, y: 140 },
+    grainline: { start: { x: 40, y: 55 }, end: { x: 220, y: 55 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 30 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 30, y: 10 }, { x: 80, y: 0 }, { x: 140, y: 0 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 240, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 250, y: 50 }, { x: 235, y: 90 }, { x: 210, y: 115 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 115 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 30 }] },
+    ],
+    internals: [
+      { id: 'slant-welt-pocket', name: 'Snap Welt Pocket', type: 'pocket', points: [{ x: 110, y: 70 }, { x: 160, y: 85 }], color: '#facc15' },
+    ],
+    notches: [{ x: 140, y: 0 }, { x: 240, y: 15 }],
+    labels: [{ text: 'BOMBER FRONT', position: { x: 110, y: 50 }, type: 'title' }],
+    measurements: { length: 65.0, halfChest: 56.0 },
+  };
+
+  const backPanel: PatternComponent = {
+    id: 'bomber-back',
+    pieceCode: 'BOMBER-BACK',
+    name: 'Bomber Blouson Back (2. 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    offset: { x: 520, y: 140 },
+    grainline: { start: { x: 40, y: 50 }, end: { x: 220, y: 50 }, label: 'GRAINLINE ↔' },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 15 }] },
+      { type: 'C', zone: 'neck', points: [{ x: 40, y: 0 }, { x: 90, y: 0 }, { x: 140, y: 0 }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 240, y: 15 }] },
+      { type: 'C', zone: 'armhole', points: [{ x: 250, y: 45 }, { x: 235, y: 85 }, { x: 210, y: 110 }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 110 }] },
+      { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 15 }] },
+    ],
+    notches: [{ x: 140, y: 0 }],
+    labels: [{ text: 'BOMBER BACK', position: { x: 110, y: 45 }, type: 'title' }],
+    measurements: { length: 65.0 },
+  };
+
+  return {
+    id: 'garment-bomber-jacket-012',
+    name: 'MA-1 Flight Bomber Jacket',
+    category: 'jacket',
+    version: 'tud v4.8',
+    baseSize: 'S',
+    currentSize: 'S',
+    position: { x: 0, y: 0 },
+    components: [frontPanel, backPanel],
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+// ==========================================
+// 7. Manual Garment Generator
+// Generates custom 1-Object garment from inputs
+// ==========================================
+export function generateBlankGarmentFromInput(input: import('./types').CustomGarmentInput): Garment {
+  const compList: PatternComponent[] = [];
+  const startX = 230;
+  let currY = 140;
+
+  input.pieces.forEach((p, idx) => {
+    const isFront = p.type === 'front';
+    const isBack = p.type === 'back';
+    const isSleeve = p.type === 'sleeve';
+    const isCollar = p.type === 'collar';
+    const isPocket = p.type === 'pocket';
+
+    const w = isSleeve ? 240 : isCollar || isPocket ? 140 : 320;
+    const h = isSleeve ? 110 : isCollar ? 50 : isPocket ? 40 : 125;
+
+    const comp: PatternComponent = {
+      id: `custom-piece-${idx + 1}-${p.pieceCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      pieceCode: p.pieceCode || `P${idx + 1}`,
+      name: `${p.name} (${idx + 1}. ${p.quantity})`,
+      cutInstruction: p.cutInstruction || `Cut ${p.quantity}`,
+      quantity: p.quantity,
+      offset: { x: startX + (idx % 2 === 0 ? 0 : 360), y: currY },
+      grainline: {
+        start: { x: 30, y: h / 2 },
+        end: { x: w - 30, y: h / 2 },
+        label: `${p.pieceCode || 'GRAINLINE'} ↔`,
+      },
+      paths: [
+        { type: 'M', zone: 'shoulder', points: [{ x: 0, y: isBack ? 15 : 25 }] },
+        { type: 'C', zone: 'neck', points: [{ x: w * 0.2, y: 0 }, { x: w * 0.4, y: 0 }, { x: w * 0.6, y: 10 }] },
+        { type: 'L', zone: 'shoulder', points: [{ x: w, y: 20 }] },
+        { type: 'C', zone: 'armhole', points: [{ x: w + 10, y: h * 0.4 }, { x: w - 10, y: h * 0.8 }, { x: w - 30, y: h }] },
+        { type: 'L', zone: 'hem', points: [{ x: 0, y: h }] },
+        { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: isBack ? 15 : 25 }] },
+      ],
+      notches: [{ x: w * 0.6, y: 10 }, { x: w, y: 20 }],
+      labels: [{ text: p.pieceCode || p.name, position: { x: w / 2 - 20, y: h / 2 }, type: 'title' }],
+      measurements: {
+        length: input.measurements.length || 70.0,
+        halfChest: (input.measurements.bustChest || 92.0) / 2,
+        waist: input.measurements.waist || 78.0,
+      },
+    };
+
+    compList.push(comp);
+    if (idx % 2 === 1) {
+      currY += h + 30;
+    }
+  });
+
+  return {
+    id: `custom-garment-${Date.now()}`,
+    name: input.name || 'Custom Tailored Pattern',
+    category: (input.category as any) || 'custom',
+    version: 'tud v4.8',
+    baseSize: input.baseSize || 'S',
+    currentSize: input.baseSize || 'S',
+    position: { x: 0, y: 0 },
+    components: compList,
+    sizeTable: DEFAULT_SIZE_TABLE,
+    gradeHistory: [],
+  };
+}
+
+
+
+

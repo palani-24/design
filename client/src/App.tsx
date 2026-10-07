@@ -17,6 +17,10 @@ import { WalkSeamModal } from './components/modals/WalkSeamModal';
 import { EFitPreviewModal } from './components/modals/EFitPreviewModal';
 import { SeamAllowanceModal } from './components/modals/SeamAllowanceModal';
 import { DartPleatModal } from './components/modals/DartPleatModal';
+import { ManualGarmentModal } from './components/modals/ManualGarmentModal';
+import { EditGarmentModal } from './components/modals/EditGarmentModal';
+import { EditComponentModal } from './components/modals/EditComponentModal';
+import { AddComponentModal } from './components/modals/AddComponentModal';
 import { CloMainStudio } from './components/clo3d/CloMainStudio';
 import { useCADStore } from './store/useCADStore';
 
@@ -105,6 +109,10 @@ export const App: React.FC = () => {
       <EFitPreviewModal />
       <SeamAllowanceModal />
       <DartPleatModal />
+      <ManualGarmentModal />
+      <EditGarmentModal />
+      <EditComponentModal />
+      <AddComponentModal />
     </div>
   );
 };

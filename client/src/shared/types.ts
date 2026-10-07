@@ -30,7 +30,7 @@ export interface PatternPathCommand {
   type: PathCommandType;
   points: Point2D[];
   annotation?: string;
-  zone?: 'neck' | 'shoulder' | 'armhole' | 'bust' | 'waist' | 'hip' | 'hem' | 'sleeve-cap' | 'sleeve-seam' | 'sleeve-hem' | 'center-fold';
+  zone?: 'neck' | 'shoulder' | 'armhole' | 'bust' | 'waist' | 'hip' | 'hem' | 'sleeve-cap' | 'sleeve-seam' | 'sleeve-hem' | 'center-fold' | 'crotch';
 }
 
 export type CADTheme = 'tukacad-black' | 'cad-slate' | 'blueprint-light';
@@ -68,6 +68,7 @@ export interface PatternComponent {
   }>;
   measurements: {
     halfChest?: number;
+    bust?: number;
     waist?: number;
     hip?: number;
     length?: number;
@@ -87,7 +88,7 @@ export interface PatternComponent {
 export interface Garment {
   id: string;
   name: string; // e.g. "Basic T-Shirt"
-  category: 't-shirt' | 'polo' | 'shirt' | 'trouser' | 'jacket' | 'dress';
+  category: 't-shirt' | 'polo' | 'shirt' | 'trouser' | 'jacket' | 'dress' | 'outerwear' | 'shorts' | 'skirt' | 'custom';
   version: string;
   baseSize: GarmentSize;
   currentSize: GarmentSize;
@@ -101,6 +102,29 @@ export interface Garment {
     timestamp: string;
   }>;
 }
+
+export interface CustomGarmentInput {
+  name: string;
+  category: 'jacket' | 'trouser' | 'dress' | 'shirt' | 't-shirt' | 'outerwear';
+  baseSize: GarmentSize;
+  fabricName?: string;
+  pieces: Array<{
+    type: 'front' | 'back' | 'sleeve' | 'collar' | 'facing' | 'pocket' | 'waistband' | 'canvas';
+    name: string;
+    pieceCode: string;
+    quantity: number;
+    cutInstruction: string;
+  }>;
+  measurements: {
+    bustChest: number;
+    waist: number;
+    hip?: number;
+    length: number;
+    shoulderWidth?: number;
+    sleeveLength?: number;
+  };
+}
+
 
 export interface Project {
   _id?: string;

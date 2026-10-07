@@ -14,6 +14,8 @@ import {
   SurfaceMode,
   AvatarPose,
   FabricPhysics,
+  PatternComponent,
+  CustomGarmentInput,
 } from '@shared/types';
 import {
   createDefaultBasicTShirt,
@@ -22,6 +24,13 @@ import {
   createChinoTrouser,
   createWomensBootCutPant,
   createMensTailoredSuitJacket,
+  createDoubleBreastedBlazer,
+  createDenimJeans,
+  createFlaredSkirt,
+  createSheathDress,
+  createTrenchCoat,
+  createBomberJacket,
+  generateBlankGarmentFromInput,
 } from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
 
@@ -80,7 +89,11 @@ interface CADState {
     | 'walkSeam'
     | 'eFit'
     | 'seamAllowance'
-    | 'dartPleat';
+    | 'dartPleat'
+    | 'manualGarment'
+    | 'editGarment'
+    | 'editComponent'
+    | 'addComponent';
 
   // Real Undo/Redo History Stack
   history: Garment[];
@@ -161,7 +174,27 @@ interface CADState {
   // Project Management
   loadProject: (project: Project) => void;
   createNewProject: (title?: string) => void;
-  loadGarmentTemplate: (templateId: 'basic-tshirt' | 'polo' | 'shirt' | 'trouser' | 'bootcut-pant' | 'suit-jacket') => void;
+  loadGarmentTemplate: (
+    templateId:
+      | 'basic-tshirt'
+      | 'polo'
+      | 'shirt'
+      | 'trouser'
+      | 'bootcut-pant'
+      | 'suit-jacket'
+      | 'double-breasted-blazer'
+      | 'denim-jeans'
+      | 'flared-skirt'
+      | 'sheath-dress'
+      | 'trench-coat'
+      | 'bomber-jacket'
+  ) => void;
+  createCustomGarment: (input: CustomGarmentInput) => void;
+  updateGarmentInfo: (updates: { name?: string; category?: any; baseSize?: GarmentSize }) => void;
+  addComponentToGarment: (component: PatternComponent) => void;
+  updateComponent: (id: string, updates: Partial<PatternComponent>) => void;
+  removeComponent: (id: string) => void;
+  duplicateComponent: (id: string) => void;
   setGarment: (garment: Garment) => void;
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
@@ -522,6 +555,18 @@ export const useCADStore = create<CADState>((set, get) => ({
       newGarment = createWomensBootCutPant();
     } else if (templateId === 'suit-jacket') {
       newGarment = createMensTailoredSuitJacket();
+    } else if (templateId === 'double-breasted-blazer') {
+      newGarment = createDoubleBreastedBlazer();
+    } else if (templateId === 'denim-jeans') {
+      newGarment = createDenimJeans();
+    } else if (templateId === 'flared-skirt') {
+      newGarment = createFlaredSkirt();
+    } else if (templateId === 'sheath-dress') {
+      newGarment = createSheathDress();
+    } else if (templateId === 'trench-coat') {
+      newGarment = createTrenchCoat();
+    } else if (templateId === 'bomber-jacket') {
+      newGarment = createBomberJacket();
     } else {
       newGarment = createDefaultBasicTShirt();
     }
@@ -543,6 +588,158 @@ export const useCADStore = create<CADState>((set, get) => ({
       gradingNotification: `Loaded template: ${newGarment.name}`,
     });
     setTimeout(() => set({ gradingNotification: null }), 3000);
+  },
+
+  createCustomGarment: (input: CustomGarmentInput) => {
+    const { history, garment, currentProject } = get();
+    const newGarment = generateBlankGarmentFromInput(input);
+    set({
+      garment: newGarment,
+      currentSize: newGarment.currentSize,
+      targetSize: newGarment.currentSize === 'S' ? 'M' : 'L',
+      selectedComponentId: 'entire',
+      currentProject: {
+        ...currentProject,
+        title: `${newGarment.name} — Custom Manual Pattern`,
+        garment: newGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      lastGradingResult: null,
+      activeModal: 'none',
+      gradingNotification: `Created custom garment: ${newGarment.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 3000);
+  },
+
+  updateGarmentInfo: (updates) => {
+    const { garment, history, currentProject } = get();
+    const updatedGarment: Garment = {
+      ...garment,
+      name: updates.name ?? garment.name,
+      category: updates.category ?? garment.category,
+      baseSize: updates.baseSize ?? garment.baseSize,
+      currentSize: updates.baseSize ?? garment.currentSize,
+    };
+    set({
+      garment: updatedGarment,
+      currentSize: updatedGarment.currentSize,
+      currentProject: {
+        ...currentProject,
+        title: `${updatedGarment.name} — Size ${updatedGarment.currentSize}`,
+        garment: updatedGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Garment metadata updated: ${updatedGarment.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  addComponentToGarment: (component: PatternComponent) => {
+    const { garment, history, currentProject } = get();
+    const updatedGarment: Garment = {
+      ...garment,
+      components: [...garment.components, component],
+    };
+    set({
+      garment: updatedGarment,
+      currentProject: {
+        ...currentProject,
+        garment: updatedGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      selectedComponentId: component.id,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Added piece: ${component.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  updateComponent: (id: string, updates: Partial<PatternComponent>) => {
+    const { garment, history, currentProject } = get();
+    const updatedComponents = garment.components.map((c) =>
+      c.id === id ? { ...c, ...updates } : c
+    );
+    const updatedGarment: Garment = {
+      ...garment,
+      components: updatedComponents,
+    };
+    set({
+      garment: updatedGarment,
+      currentProject: {
+        ...currentProject,
+        garment: updatedGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Updated piece settings`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  removeComponent: (id: string) => {
+    const { garment, history, currentProject, selectedComponentId } = get();
+    if (garment.components.length <= 1) {
+      set({ gradingNotification: 'A garment must have at least one pattern piece' });
+      setTimeout(() => set({ gradingNotification: null }), 2500);
+      return;
+    }
+    const updatedComponents = garment.components.filter((c) => c.id !== id);
+    const updatedGarment: Garment = {
+      ...garment,
+      components: updatedComponents,
+    };
+    set({
+      garment: updatedGarment,
+      selectedComponentId: selectedComponentId === id ? 'entire' : selectedComponentId,
+      currentProject: {
+        ...currentProject,
+        garment: updatedGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Removed pattern piece`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  duplicateComponent: (id: string) => {
+    const { garment, history, currentProject } = get();
+    const comp = garment.components.find((c) => c.id === id);
+    if (!comp) return;
+
+    const newId = `${comp.id}-copy-${Date.now().toString().slice(-4)}`;
+    const cloned: PatternComponent = {
+      ...JSON.parse(JSON.stringify(comp)),
+      id: newId,
+      pieceCode: comp.pieceCode ? `${comp.pieceCode}-CPY` : 'CPY',
+      name: `${comp.name} (Copy)`,
+      offset: { x: comp.offset.x + 30, y: comp.offset.y + 30 },
+    };
+
+    const updatedGarment: Garment = {
+      ...garment,
+      components: [...garment.components, cloned],
+    };
+    set({
+      garment: updatedGarment,
+      selectedComponentId: newId,
+      currentProject: {
+        ...currentProject,
+        garment: updatedGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Cloned piece: ${cloned.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
   },
 
   setGarment: (garment) => {
