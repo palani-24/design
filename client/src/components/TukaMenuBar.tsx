@@ -96,7 +96,8 @@ export const TukaMenuBar: React.FC = () => {
     {
       name: 'Piece',
       items: [
-        { label: '★ Mens Tailored Suit Jacket (16-Piece Marker)', action: () => loadGarmentTemplate('suit-jacket') },
+        { label: "★ Women's Basic Bodice (2-Piece Sloper)", action: () => loadGarmentTemplate('basic-bodice') },
+        { label: 'Mens Tailored Suit Jacket (16-Piece Marker)', action: () => loadGarmentTemplate('suit-jacket') },
         { label: 'Womens Boot Cut Pant (tud v4.8)', action: () => loadGarmentTemplate('bootcut-pant') },
         { label: 'Basic T-Shirt (Crew Neck)', action: () => loadGarmentTemplate('basic-tshirt') },
         { label: 'Polo T-Shirt (Collar & Placket)', action: () => loadGarmentTemplate('polo') },

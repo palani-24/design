@@ -23,9 +23,20 @@ export const RightGradingPanel: React.FC = () => {
     lastGradingResult,
     gradingNotification,
     activeGradingStep,
+    selectedComponentId,
+    selectEntireGarment,
+    rotateComponent,
+    mirrorComponent,
+    offsetComponentContour,
+    setActiveModal,
   } = useCADStore();
 
   const [activeTab, setActiveTab] = useState<'grading' | 'matrix'>('grading');
+
+  const activeComp =
+    selectedComponentId && selectedComponentId !== 'entire'
+      ? garment.components.find((c) => c.id === selectedComponentId)
+      : null;
 
   const sizeTable = garment.sizeTable;
   const currentDims = sizeTable[currentSize] || sizeTable.S;
@@ -77,6 +88,60 @@ export const RightGradingPanel: React.FC = () => {
             Ready
           </span>
         </div>
+
+        {/* Selected Pattern Piece Quick Editor */}
+        {activeComp && (
+          <div className="bg-amber-50/80 border border-amber-300 rounded-lg p-2.5 space-y-2 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-bold text-amber-950 text-xs">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>Piece: {activeComp.pieceCode || activeComp.name}</span>
+              </div>
+              <button
+                onClick={selectEntireGarment}
+                className="text-[9.5px] px-2 py-0.5 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded font-bold transition-colors cursor-pointer"
+                title="Switch back to 1-Object Entire Garment"
+              >
+                Entire Garment
+              </button>
+            </div>
+            <div className="text-[10px] text-amber-800 font-medium">
+              {activeComp.cutInstruction} • SA: {activeComp.seamAllowanceMm ?? 12.7}mm
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="grid grid-cols-4 gap-1 text-[10px]">
+              <button
+                onClick={() => rotateComponent(activeComp.id, 45)}
+                className="p-1 bg-white border border-amber-200 rounded font-semibold text-slate-700 hover:bg-amber-100 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                title="Rotate 45°"
+              >
+                ↺ 45°
+              </button>
+              <button
+                onClick={() => mirrorComponent(activeComp.id, 'x')}
+                className="p-1 bg-white border border-amber-200 rounded font-semibold text-slate-700 hover:bg-amber-100 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                title="Mirror Horizontal"
+              >
+                ⇄ Flip
+              </button>
+              <button
+                onClick={() => offsetComponentContour(activeComp.id, 5)}
+                className="p-1 bg-white border border-amber-200 rounded font-semibold text-slate-700 hover:bg-amber-100 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                title="Add 5mm Seam Allowance"
+              >
+                +5mm SA
+              </button>
+              <button
+                onClick={() => setActiveModal('editComponent')}
+                className="p-1 bg-amber-600 text-white rounded font-bold hover:bg-amber-700 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                title="Open Piece Settings Modal"
+              >
+                Edit...
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Size Selection Controls */}
         <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">

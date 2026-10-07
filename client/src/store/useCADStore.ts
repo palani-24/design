@@ -15,6 +15,7 @@ import {
   AvatarPose,
   FabricPhysics,
   PatternComponent,
+  InternalContour,
   CustomGarmentInput,
   EasyPatternStep,
   TukacadWorkflowStep,
@@ -261,13 +262,29 @@ interface CADState {
   setGarment: (garment: Garment) => void;
   setActiveModal: (modal: CADState['activeModal']) => void;
   setNotification: (msg: string | null) => void;
+
+  // Piece Transformation & 16-Tool Vector Editing
+  moveComponent: (id: string, dx: number, dy: number, recordHistory?: boolean) => void;
+  updatePointPosition: (componentId: string, cmdIdx: number, ptIdx: number, newX: number, newY: number, recordHistory?: boolean) => void;
+  addPointToComponent: (componentId: string, point: Point2D) => void;
+  addInternalLine: (componentId: string, p1: Point2D, p2: Point2D, name?: string) => void;
+  addInternalContour: (componentId: string, contour: InternalContour) => void;
+  addNotchToComponent: (componentId: string, point: Point2D) => void;
+  addLabelToComponent: (componentId: string, text: string, pos: Point2D) => void;
+  mirrorComponent: (componentId: string, axis?: 'x' | 'y') => void;
+  rotateComponent: (componentId: string, angleDegrees?: number) => void;
+  offsetComponentContour: (componentId: string, deltaMm: number) => void;
+  filletCornerPoint: (componentId: string, cmdIdx: number, ptIdx: number, radius?: number) => void;
+  trimNearestInternalOrNotch: (componentId: string, point: Point2D) => void;
+  breakSegmentAtPoint: (componentId: string, point: Point2D) => void;
+  joinEndpoints: (componentId: string) => void;
 }
 
-const initialGarment = createMensTailoredSuitJacket();
+const initialGarment = createBasicBodice();
 const initialProject: Project = {
-  id: 'proj-suit-jacket-001',
-  title: 'Mens Tailored Suit Jacket — TUKAdesign CAD Studio v4.8',
-  description: '16-Piece Industrial Nest with Back, Front, Sleeves, Side, Facing, Canvas & Fusing.',
+  id: 'proj-basic-bodice-001',
+  title: 'Basic Bodice — TUKAdesign CAD Studio [1-Object Parametric Engine v4.8]',
+  description: '2-Piece Authentic Sloper (Front Bodice & Back Bodice) with Bust, Waist & Shoulder Darts.',
   garment: initialGarment,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -894,4 +911,526 @@ export const useCADStore = create<CADState>((set, get) => ({
 
   setActiveModal: (modal) => set({ activeModal: modal }),
   setNotification: (msg) => set({ gradingNotification: msg }),
+
+  // Piece Transformation & 16-Tool Vector Editing Implementations
+  moveComponent: (id, dx, dy, recordHistory = false) => {
+    const { garment, history } = get();
+    const updatedComponents = garment.components.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            offset: {
+              x: Math.round(c.offset.x + dx),
+              y: Math.round(c.offset.y + dy),
+            },
+          }
+        : c
+    );
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      ...(recordHistory
+        ? { history: [...history.slice(-25), garment], future: [] }
+        : {}),
+    });
+  },
+
+  updatePointPosition: (componentId, cmdIdx, ptIdx, newX, newY, recordHistory = false) => {
+    const { garment, history } = get();
+    const updatedComponents = garment.components.map((c) => {
+      if (c.id !== componentId) return c;
+      const updatedPaths = c.paths.map((cmd, cIdx) => {
+        if (cIdx !== cmdIdx) return cmd;
+        const updatedPoints = cmd.points.map((pt, pIdx) => {
+          if (pIdx !== ptIdx) return pt;
+          return { ...pt, x: Math.round(newX), y: Math.round(newY) };
+        });
+        return { ...cmd, points: updatedPoints };
+      });
+      return { ...c, paths: updatedPaths };
+    });
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      ...(recordHistory
+        ? { history: [...history.slice(-25), garment], future: [] }
+        : {}),
+    });
+  },
+
+  addPointToComponent: (componentId, point) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId) || garment.components[0];
+    if (!comp) return;
+
+    const newPoint = {
+      x: Math.round(point.x),
+      y: Math.round(point.y),
+      name: `Grading Node (${Math.round(point.x)}, ${Math.round(point.y)})`,
+    };
+
+    // Insert point into paths
+    const updatedPaths = [
+      ...comp.paths,
+      { type: 'L' as const, points: [newPoint], annotation: 'Added Precision Node' },
+    ];
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) =>
+        c.id === comp.id ? { ...c, paths: updatedPaths } : c
+      ),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Added Anchor Node at (${newPoint.x}, ${newPoint.y})`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  addInternalLine: (componentId, p1, p2, name = 'Internal Line') => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId) || garment.components[0];
+    if (!comp) return;
+
+    const newLine: InternalContour = {
+      id: `int-line-${Date.now()}`,
+      name,
+      type: 'line',
+      points: [
+        { x: Math.round(p1.x), y: Math.round(p1.y) },
+        { x: Math.round(p2.x), y: Math.round(p2.y) },
+      ],
+      color: '#38bdf8',
+    };
+
+    const updatedComponents = garment.components.map((c) => {
+      if (c.id !== comp.id) return c;
+      return {
+        ...c,
+        internals: [...(c.internals || []), newLine],
+      };
+    });
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Created Internal Line: ${Math.round(Math.hypot(p2.x - p1.x, p2.y - p1.y))}mm`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  addInternalContour: (componentId, contour) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId) || garment.components[0];
+    if (!comp) return;
+
+    const updatedComponents = garment.components.map((c) => {
+      if (c.id !== comp.id) return c;
+      return {
+        ...c,
+        internals: [...(c.internals || []), contour],
+      };
+    });
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Placed ${contour.name} on ${comp.pieceCode || comp.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  addNotchToComponent: (componentId, point) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId) || garment.components[0];
+    if (!comp) return;
+
+    const newNotch = { x: Math.round(point.x), y: Math.round(point.y), name: 'Seam Notch' };
+    const updatedComponents = garment.components.map((c) => {
+      if (c.id !== comp.id) return c;
+      return {
+        ...c,
+        notches: [...c.notches, newNotch],
+      };
+    });
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Added Seam Notch at (${newNotch.x}, ${newNotch.y})`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  addLabelToComponent: (componentId, text, pos) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId) || garment.components[0];
+    if (!comp) return;
+
+    const newLabel = {
+      text,
+      position: { x: Math.round(pos.x), y: Math.round(pos.y) },
+      type: 'annotation',
+    };
+    const updatedComponents = garment.components.map((c) => {
+      if (c.id !== comp.id) return c;
+      return {
+        ...c,
+        labels: [...c.labels, newLabel],
+      };
+    });
+    const updatedGarment = { ...garment, components: updatedComponents };
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Added Pattern Text: "${text}"`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  mirrorComponent: (componentId, axis = 'x') => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) {
+      set({ gradingNotification: 'Select a pattern piece first to mirror' });
+      setTimeout(() => set({ gradingNotification: null }), 2500);
+      return;
+    }
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    comp.paths.forEach((cmd) =>
+      cmd.points.forEach((p) => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      })
+    );
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    const mirrorPt = (pt: Point2D): Point2D => ({
+      ...pt,
+      x: axis === 'x' ? Math.round(2 * cx - pt.x) : pt.x,
+      y: axis === 'y' ? Math.round(2 * cy - pt.y) : pt.y,
+    });
+
+    const updatedPaths = comp.paths.map((cmd) => ({
+      ...cmd,
+      points: cmd.points.map(mirrorPt),
+    }));
+    const updatedNotches = comp.notches.map(mirrorPt);
+    const updatedInternals = comp.internals?.map((int) => ({
+      ...int,
+      points: int.points.map(mirrorPt),
+    }));
+    const updatedGrainline = comp.grainline
+      ? {
+          ...comp.grainline,
+          start: mirrorPt(comp.grainline.start),
+          end: mirrorPt(comp.grainline.end),
+        }
+      : comp.grainline;
+    const updatedLabels = comp.labels.map((lbl) => ({
+      ...lbl,
+      position: mirrorPt(lbl.position),
+    }));
+
+    const updatedComp = {
+      ...comp,
+      paths: updatedPaths,
+      notches: updatedNotches,
+      internals: updatedInternals,
+      grainline: updatedGrainline,
+      labels: updatedLabels,
+    };
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) => (c.id === comp.id ? updatedComp : c)),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Mirrored ${comp.pieceCode || comp.name} ${axis === 'x' ? 'Horizontally' : 'Vertically'}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  rotateComponent: (componentId, angleDegrees = 45) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) {
+      set({ gradingNotification: 'Select a pattern piece first to rotate' });
+      setTimeout(() => set({ gradingNotification: null }), 2500);
+      return;
+    }
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    comp.paths.forEach((cmd) =>
+      cmd.points.forEach((p) => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      })
+    );
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const rad = (angleDegrees * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const rotatePt = (pt: Point2D): Point2D => {
+      const dx = pt.x - cx;
+      const dy = pt.y - cy;
+      return {
+        ...pt,
+        x: Math.round(cx + dx * cos - dy * sin),
+        y: Math.round(cy + dx * sin + dy * cos),
+      };
+    };
+
+    const updatedPaths = comp.paths.map((cmd) => ({
+      ...cmd,
+      points: cmd.points.map(rotatePt),
+    }));
+    const updatedNotches = comp.notches.map(rotatePt);
+    const updatedInternals = comp.internals?.map((int) => ({
+      ...int,
+      points: int.points.map(rotatePt),
+    }));
+    const updatedGrainline = comp.grainline
+      ? {
+          ...comp.grainline,
+          start: rotatePt(comp.grainline.start),
+          end: rotatePt(comp.grainline.end),
+        }
+      : comp.grainline;
+    const updatedLabels = comp.labels.map((lbl) => ({
+      ...lbl,
+      position: rotatePt(lbl.position),
+    }));
+
+    const updatedComp = {
+      ...comp,
+      paths: updatedPaths,
+      notches: updatedNotches,
+      internals: updatedInternals,
+      grainline: updatedGrainline,
+      labels: updatedLabels,
+    };
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) => (c.id === comp.id ? updatedComp : c)),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Rotated ${comp.pieceCode || comp.name} by ${angleDegrees}°`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  offsetComponentContour: (componentId, deltaMm) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) return;
+
+    const currentSA = comp.seamAllowanceMm ?? 12.7;
+    const nextSA = Math.max(0, +(currentSA + deltaMm).toFixed(1));
+
+    const updatedComp = {
+      ...comp,
+      seamAllowanceMm: nextSA,
+    };
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) => (c.id === comp.id ? updatedComp : c)),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Updated Seam Allowance: ${nextSA} mm (${(nextSA / 25.4).toFixed(2)} in)`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  filletCornerPoint: (componentId, cmdIdx, ptIdx, radius = 15) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) return;
+
+    const cmd = comp.paths[cmdIdx];
+    if (!cmd || !cmd.points[ptIdx]) return;
+
+    const targetPt = cmd.points[ptIdx];
+    const updatedPaths = comp.paths.map((c, cIdx) => {
+      if (cIdx !== cmdIdx) return c;
+      return {
+        ...c,
+        type: 'Q' as const,
+        points: [
+          { x: targetPt.x, y: targetPt.y, isControl: true },
+          { x: targetPt.x + radius, y: targetPt.y + radius, name: 'Filleted Corner' },
+        ],
+      };
+    });
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) =>
+        c.id === comp.id ? { ...c, paths: updatedPaths } : c
+      ),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Filleted Corner (R=${radius}mm)`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  trimNearestInternalOrNotch: (componentId, point) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) return;
+
+    let removedType = '';
+    let updatedInternals = comp.internals;
+    if (comp.internals && comp.internals.length > 0) {
+      const idx = comp.internals.findIndex((internal) =>
+        internal.points.some((p) => Math.hypot(p.x - point.x, p.y - point.y) < 35)
+      );
+      if (idx !== -1) {
+        removedType = `Internal Line "${comp.internals[idx].name}"`;
+        updatedInternals = comp.internals.filter((_, i) => i !== idx);
+      }
+    }
+
+    let updatedNotches = comp.notches;
+    if (!removedType && comp.notches.length > 0) {
+      const nIdx = comp.notches.findIndex((n) => Math.hypot(n.x - point.x, n.y - point.y) < 25);
+      if (nIdx !== -1) {
+        removedType = 'Seam Notch';
+        updatedNotches = comp.notches.filter((_, i) => i !== nIdx);
+      }
+    }
+
+    let updatedLabels = comp.labels;
+    if (!removedType && comp.labels.length > 0) {
+      const lIdx = comp.labels.findIndex((l) => Math.hypot(l.position.x - point.x, l.position.y - point.y) < 30);
+      if (lIdx !== -1) {
+        removedType = `Label "${comp.labels[lIdx].text}"`;
+        updatedLabels = comp.labels.filter((_, i) => i !== lIdx);
+      }
+    }
+
+    if (!removedType) {
+      set({ gradingNotification: 'No line, notch or label found near cursor to trim' });
+      setTimeout(() => set({ gradingNotification: null }), 2000);
+      return;
+    }
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) =>
+        c.id === comp.id
+          ? {
+              ...c,
+              internals: updatedInternals,
+              notches: updatedNotches,
+              labels: updatedLabels,
+            }
+          : c
+      ),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Trimmed ${removedType}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  breakSegmentAtPoint: (componentId, point) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) return;
+
+    const splitPt = { x: Math.round(point.x), y: Math.round(point.y), name: 'Split Point' };
+    const updatedPaths = [
+      ...comp.paths,
+      { type: 'L' as const, points: [splitPt], annotation: 'Broken Segment' },
+    ];
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) =>
+        c.id === comp.id ? { ...c, paths: updatedPaths } : c
+      ),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Broke segment at (${splitPt.x}, ${splitPt.y})`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
+
+  joinEndpoints: (componentId) => {
+    const { garment, history } = get();
+    const comp = garment.components.find((c) => c.id === componentId);
+    if (!comp) return;
+
+    const hasClose = comp.paths[comp.paths.length - 1]?.type === 'Z';
+    if (hasClose) {
+      set({ gradingNotification: 'Contour is already closed and joined' });
+      setTimeout(() => set({ gradingNotification: null }), 2500);
+      return;
+    }
+
+    const firstPt = comp.paths[0]?.points[0] || { x: 0, y: 0 };
+    const updatedPaths = [
+      ...comp.paths,
+      { type: 'Z' as const, points: [{ x: firstPt.x, y: firstPt.y }] },
+    ];
+
+    const updatedGarment = {
+      ...garment,
+      components: garment.components.map((c) =>
+        c.id === comp.id ? { ...c, paths: updatedPaths } : c
+      ),
+    };
+
+    set({
+      garment: updatedGarment,
+      history: [...history.slice(-25), garment],
+      future: [],
+      gradingNotification: `Joined endpoints and closed contour for ${comp.pieceCode || comp.name}`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 2500);
+  },
 }));

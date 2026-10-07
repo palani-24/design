@@ -6,6 +6,7 @@ export const NewProjectModal: React.FC = () => {
   const { activeModal, setActiveModal, createNewProject, loadGarmentTemplate } = useCADStore();
   const [title, setTitle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<
+    | 'basic-bodice'
     | 'suit-jacket'
     | 'double-breasted-blazer'
     | 'trench-coat'
@@ -59,6 +60,7 @@ export const NewProjectModal: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-0.5">
             {[
+              { id: 'basic-bodice', name: "Women's Basic Bodice", tag: '2 Pcs', desc: 'Front & Back Sloper with Darts' },
               { id: 'suit-jacket', name: 'Mens Tailored Suit Jacket', tag: '16 Pcs', desc: 'Chest canvas & sleeves' },
               { id: 'double-breasted-blazer', name: 'DB Peak Lapel Blazer', tag: '10 Pcs', desc: 'Overlapping button wrap' },
               { id: 'trench-coat', name: 'Classic Belted Trench Coat', tag: '14 Pcs', desc: 'Storm flaps & epaulettes' },

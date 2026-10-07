@@ -29,7 +29,8 @@ export const LeftPanel: React.FC = () => {
     removeComponent,
   } = useCADStore();
 
-  const [suitsExpanded, setSuitsExpanded] = useState(true);
+  const [bodicesExpanded, setBodicesExpanded] = useState(true);
+  const [suitsExpanded, setSuitsExpanded] = useState(false);
   const [outerwearExpanded, setOuterwearExpanded] = useState(false);
   const [trousersExpanded, setTrousersExpanded] = useState(false);
   const [dressesExpanded, setDressesExpanded] = useState(false);
@@ -39,6 +40,7 @@ export const LeftPanel: React.FC = () => {
   const isEntireSelected = selectedComponentId === 'entire' || selectedComponentId === null;
 
   // Active status indicators
+  const isBodiceActive = garment.id === 'garment-basic-bodice-01' || garment.name.toLowerCase().includes('bodice');
   const isSuitActive = garment.id === 'garment-mens-suit-jacket-006';
   const isBlazerActive = garment.id === 'garment-womens-db-blazer-007';
   const isTrenchActive = garment.id === 'garment-trench-coat-011';
@@ -85,6 +87,44 @@ export const LeftPanel: React.FC = () => {
 
       {/* Garment Categories Accordion List */}
       <div className="p-2 border-b border-slate-200 overflow-y-auto max-h-60 text-xs space-y-1">
+        {/* 0. Bodices & Slopers (EasyPattern) */}
+        <div>
+          <button
+            onClick={() => setBodicesExpanded(!bodicesExpanded)}
+            className="w-full flex items-center justify-between p-1.5 hover:bg-slate-100 rounded text-slate-700 font-semibold text-left transition-colors"
+          >
+            <div className="flex items-center gap-1.5">
+              {bodicesExpanded ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+              <span>Bodices & Slopers (1)</span>
+            </div>
+            <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded font-medium">
+              {isBodiceActive ? 'ACTIVE' : 'Sloper'}
+            </span>
+          </button>
+          {bodicesExpanded && (
+            <div className="ml-4 pl-2 border-l border-slate-200 space-y-1 mt-1">
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isBodiceActive
+                    ? 'bg-blue-50 border border-blue-200 text-blue-900 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                onClick={() => loadGarmentTemplate('basic-bodice')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isBodiceActive ? 'bg-blue-600' : 'bg-slate-300'}`} />
+                  <span className="text-xs truncate">Women's Basic Bodice</span>
+                </div>
+                <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isBodiceActive ? 'bg-blue-600 text-white' : 'text-slate-400'
+                }`}>
+                  {isBodiceActive ? 'ACTIVE' : '2 Pcs'}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* 1. Tailored Jackets & Suits */}
         <div>
           <button
