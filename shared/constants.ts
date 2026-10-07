@@ -450,91 +450,641 @@ export function createPoloTShirt(): Garment {
   };
 }
 
-export function createCasualShirt(): Garment {
-  const basic = createDefaultBasicTShirt();
-  const front = JSON.parse(JSON.stringify(basic.components[0])) as PatternComponent;
-  const back = JSON.parse(JSON.stringify(basic.components[1])) as PatternComponent;
-  const sleeve = JSON.parse(JSON.stringify(basic.components[2])) as PatternComponent;
+export const MENS_SHIRT_SIZE_TABLE: SizeTable = {
+  XS: { bust: 94.0, waist: 86.0, hip: 94.0, length: 74.0, width: 47.0, height: 75.0, sleeveLength: 58.0, shoulderWidth: 42.0, neckCircumference: 38.0 },
+  S:  { bust: 97.0, waist: 89.0, hip: 97.0, length: 75.0, width: 48.5, height: 76.0, sleeveLength: 59.0, shoulderWidth: 43.0, neckCircumference: 39.0 },
+  M:  { bust: 100.0, waist: 92.0, hip: 100.0, length: 76.0, width: 50.0, height: 77.0, sleeveLength: 60.0, shoulderWidth: 44.0, neckCircumference: 40.0 },
+  L:  { bust: 104.0, waist: 96.0, hip: 104.0, length: 77.0, width: 52.0, height: 78.0, sleeveLength: 61.0, shoulderWidth: 45.5, neckCircumference: 41.0 },
+  XL: { bust: 108.0, waist: 100.0, hip: 108.0, length: 78.0, width: 54.0, height: 79.0, sleeveLength: 62.0, shoulderWidth: 47.0, neckCircumference: 42.0 },
+  XXL:{ bust: 114.0, waist: 106.0, hip: 114.0, length: 80.0, width: 57.0, height: 81.0, sleeveLength: 63.0, shoulderWidth: 49.0, neckCircumference: 43.5 },
+};
 
-  front.id = 'shirt-front';
-  front.name = 'Shirt Front (Placket & Pocket)';
-  front.cutInstruction = 'Cut 2 (Left & Right) • 3cm Front Placket';
-  front.labels[0].text = 'SHIRT FRONT';
-  front.labels[1].text = '1/2 Chest: 52.0cm • Button Stand';
-
-  back.id = 'shirt-back';
-  back.name = 'Shirt Back (Yoke & Pleat)';
-  back.cutInstruction = 'Cut 1 on Fold • Center Box Pleat';
-  back.labels[0].text = 'SHIRT BACK';
-  back.labels[1].text = 'Curved Shirttail Hem • +40mm';
-
-  sleeve.id = 'shirt-sleeve';
-  sleeve.name = 'Long Sleeve & Placket';
-  sleeve.cutInstruction = 'Cut 2 (Pair) • Gauntlet & Cuff';
-  sleeve.labels[0].text = 'LONG SLEEVE';
-  sleeve.labels[1].text = 'Cap Scye 48.0cm • Length 62.0cm';
-
-  const collarStand: PatternComponent = {
-    id: 'shirt-collar',
-    name: 'Shirt Collar & Stand',
-    cutInstruction: 'Cut 2 (Upper & Under Collar + Interlining)',
-    offset: { x: 720, y: 380 },
+export function createMensShirtBasicPattern(): Garment {
+  // 1. FRONT (CUT 2): Width 25cm, Total length 76cm (scye 26cm, side seam 50cm), neck 11.5cm x 7cm, 2.5cm slope
+  const front: PatternComponent = {
+    id: 'shirt-front',
+    pieceCode: 'FR',
+    name: 'FRONT (CUT 2)',
+    cutInstruction: 'Cut 2 (Left & Right) • 3cm Front Placket Fold',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 40, y: 40 },
     grainline: {
-      start: { x: 20, y: 50 },
-      end: { x: 220, y: 50 },
-      label: 'GRAINLINE ↔ COLLAR',
+      start: { x: 45, y: 120 },
+      end: { x: 45, y: 700 },
+      label: 'GRAINLINE ↕ CF',
     },
     paths: [
       {
         type: 'M',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 70, name: 'Center Front Neck' }],
+      },
+      {
+        type: 'C',
         zone: 'neck',
-        points: [{ x: 0, y: 40, name: 'Center Back Collar Stand' }],
+        points: [
+          { x: 20, y: 70, isControl: true },
+          { x: 55, y: 30, isControl: true },
+          { x: 70, y: 0, name: 'HPS Neck Point' },
+        ],
+        annotation: 'Neck Curve (7cm drop, 11.5cm width)',
       },
       {
         type: 'L',
-        zone: 'neck',
-        points: [{ x: 220, y: 40, name: 'Collar Stand Point' }],
+        zone: 'shoulder',
+        points: [{ x: 185, y: 25, name: 'Front Shoulder Tip' }],
+        annotation: 'Shoulder Seam (11.5cm, 2.5cm slope)',
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 190, y: 150, isControl: true },
+          { x: 210, y: 240, isControl: true },
+          { x: 250, y: 260, name: 'Underarm Scye Point' },
+        ],
+        annotation: 'Armhole Scye (26cm Depth)',
       },
       {
         type: 'L',
-        zone: 'neck',
-        points: [{ x: 240, y: 95, name: 'Collar Leaf Point' }],
+        zone: 'waist',
+        points: [{ x: 250, y: 760, name: 'Side Hem Point' }],
+        annotation: 'Side Seam (50cm)',
       },
       {
         type: 'L',
-        zone: 'neck',
-        points: [{ x: 0, y: 90, name: 'Center Back Leaf' }],
+        zone: 'hem',
+        points: [{ x: 0, y: 760, name: 'Center Front Hem' }],
+        annotation: 'Hem Width (25cm • 3cm SA)',
       },
       {
         type: 'Z',
-        zone: 'neck',
-        points: [{ x: 0, y: 40 }],
+        zone: 'center-fold',
+        points: [{ x: 0, y: 70 }],
       },
     ],
     notches: [
-      { x: 110, y: 40, name: 'Shoulder Seam Notch', isNotch: true },
+      { x: 205, y: 160, name: 'Armhole Front Notch', isNotch: true },
+      { x: 30, y: 760, name: 'Placket Fold Notch', isNotch: true },
+      { x: 250, y: 730, name: 'Hem 3cm Notch', isNotch: true },
+    ],
+    internals: [
+      {
+        id: 'front-placket-fold-line',
+        name: 'Placket Fold Line (3cm)',
+        type: 'line',
+        points: [{ x: 30, y: 70 }, { x: 30, y: 760 }],
+        color: '#16a34a',
+      },
+      {
+        id: 'front-chest-pocket-placement',
+        name: 'Chest Pocket Placement (13cm × 14cm)',
+        type: 'pocket',
+        points: [
+          { x: 60, y: 320 },
+          { x: 190, y: 320 },
+          { x: 190, y: 430 },
+          { x: 125, y: 460 },
+          { x: 60, y: 430 },
+          { x: 60, y: 320 },
+        ],
+        closed: true,
+        color: '#2563eb',
+      },
     ],
     labels: [
-      { text: 'STAND COLLAR', position: { x: 50, y: 70 }, type: 'title' },
-      { text: 'Point Spread 7.5cm', position: { x: 50, y: 85 }, type: 'meta' },
+      { text: 'FRONT', position: { x: 90, y: 210 }, type: 'title' },
+      { text: '(CUT 2)', position: { x: 90, y: 235 }, type: 'subtitle' },
+      { text: 'Width: 25cm • Length: 76cm', position: { x: 55, y: 260 }, type: 'meta' },
+      { text: 'Scye: 26cm • Side: 50cm', position: { x: 60, y: 280 }, type: 'guide' },
+      { text: 'SA: 1cm (Hem: 3cm)', position: { x: 68, y: 300 }, type: 'guide' },
     ],
     measurements: {
-      halfChest: 40.0,
+      halfChest: 50.0,
+      length: 76.0,
+      bodyLength: 76.0,
+      armholeLength: 26.0,
+      shoulderLength: 11.5,
+    },
+  };
+
+  // 2. BACK (CUT 1): Width 25cm, Total length 76cm, Shoulder 21cm, Slope 2.5cm, Armhole 26cm, Side 50cm
+  const back: PatternComponent = {
+    id: 'shirt-back',
+    pieceCode: 'BK',
+    name: 'BACK (CUT 1)',
+    cutInstruction: 'Cut 1 on Fold • Center Fold Line',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 330, y: 40 },
+    grainline: {
+      start: { x: 40, y: 100 },
+      end: { x: 40, y: 700 },
+      label: 'GRAINLINE ↕ CB FOLD',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 25, name: 'Center Back Neck' }],
+      },
+      {
+        type: 'C',
+        zone: 'neck',
+        points: [
+          { x: 25, y: 25, isControl: true },
+          { x: 55, y: 15, isControl: true },
+          { x: 70, y: 0, name: 'Back HPS Neck' },
+        ],
+        annotation: 'Back Neckline Curve',
+      },
+      {
+        type: 'L',
+        zone: 'shoulder',
+        points: [{ x: 210, y: 25, name: 'Back Shoulder Tip' }],
+        annotation: 'Back Shoulder (21cm, 2.5cm slope)',
+      },
+      {
+        type: 'C',
+        zone: 'armhole',
+        points: [
+          { x: 205, y: 140, isControl: true },
+          { x: 215, y: 230, isControl: true },
+          { x: 250, y: 260, name: 'Back Underarm Scye' },
+        ],
+        annotation: 'Back Armhole Scye (26cm Depth)',
+      },
+      {
+        type: 'L',
+        zone: 'waist',
+        points: [{ x: 250, y: 760, name: 'Back Side Hem' }],
+        annotation: 'Back Side Seam (50cm)',
+      },
+      {
+        type: 'L',
+        zone: 'hem',
+        points: [{ x: 0, y: 760, name: 'Center Back Hem' }],
+        annotation: 'Hem Width (25cm • 3cm SA)',
+      },
+      {
+        type: 'Z',
+        zone: 'center-fold',
+        points: [{ x: 0, y: 25 }],
+      },
+    ],
+    notches: [
+      { x: 205, y: 145, name: 'Back Double Notch 1', isNotch: true },
+      { x: 205, y: 155, name: 'Back Double Notch 2', isNotch: true },
+      { x: 250, y: 730, name: 'Hem 3cm Notch', isNotch: true },
+    ],
+    internals: [
+      {
+        id: 'back-center-fold-indicator',
+        name: 'Center Fold Line',
+        type: 'line',
+        points: [{ x: 0, y: 25 }, { x: 0, y: 760 }],
+        color: '#16a34a',
+      },
+    ],
+    labels: [
+      { text: 'BACK', position: { x: 95, y: 210 }, type: 'title' },
+      { text: '(CUT 1)', position: { x: 95, y: 235 }, type: 'subtitle' },
+      { text: 'Width: 25cm • Length: 76cm', position: { x: 60, y: 260 }, type: 'meta' },
+      { text: 'Shoulder: 21cm • Scye: 26cm', position: { x: 55, y: 280 }, type: 'guide' },
+      { text: 'SA: 1cm (Hem: 3cm)', position: { x: 70, y: 300 }, type: 'guide' },
+    ],
+    measurements: {
+      halfChest: 50.0,
+      length: 76.0,
+      bodyLength: 76.0,
+      armholeLength: 26.0,
+      shoulderLength: 14.0,
+      shoulderWidth: 21.0,
+    },
+  };
+
+  // 3. SLEEVE (CUT 2): Cap 15cm, Bicep 36cm, Sleeve Length 60cm, Cuff 22cm
+  const sleeve: PatternComponent = {
+    id: 'shirt-sleeve',
+    pieceCode: 'SLV',
+    name: 'SLEEVE (CUT 2)',
+    cutInstruction: 'Cut 2 (Left & Right Pair)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 620, y: 40 },
+    grainline: {
+      start: { x: 180, y: 40 },
+      end: { x: 180, y: 560 },
+      label: 'GRAINLINE ↕ SLEEVE CENTER',
+    },
+    paths: [
+      {
+        type: 'M',
+        zone: 'sleeve-seam',
+        points: [{ x: 0, y: 150, name: 'Front Underarm Bicep' }],
+      },
+      {
+        type: 'C',
+        zone: 'sleeve-cap',
+        points: [
+          { x: 60, y: 70, isControl: true },
+          { x: 120, y: 0, isControl: true },
+          { x: 180, y: 0, name: 'Sleeve Cap Crown' },
+        ],
+        annotation: 'Front Sleeve Cap Curve',
+      },
+      {
+        type: 'C',
+        zone: 'sleeve-cap',
+        points: [
+          { x: 240, y: 0, isControl: true },
+          { x: 300, y: 70, isControl: true },
+          { x: 360, y: 150, name: 'Back Underarm Bicep' },
+        ],
+        annotation: 'Back Sleeve Cap Curve',
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-seam',
+        points: [{ x: 290, y: 600, name: 'Back Cuff Hem' }],
+        annotation: 'Back Underarm Seam',
+      },
+      {
+        type: 'L',
+        zone: 'sleeve-hem',
+        points: [{ x: 70, y: 600, name: 'Front Cuff Hem' }],
+        annotation: 'Cuff Hem Line (22cm)',
+      },
+      {
+        type: 'Z',
+        zone: 'sleeve-seam',
+        points: [{ x: 0, y: 150 }],
+      },
+    ],
+    notches: [
+      { x: 180, y: 0, name: 'Cap Crown Center Notch', isNotch: true },
+      { x: 70, y: 60, name: 'Front Pitch Notch', isNotch: true },
+      { x: 290, y: 60, name: 'Back Pitch Double Notch', isNotch: true },
+    ],
+    internals: [
+      {
+        id: 'sleeve-placket-slit',
+        name: 'Sleeve Placket Slit (12cm)',
+        type: 'line',
+        points: [{ x: 235, y: 600 }, { x: 235, y: 480 }],
+        color: '#2563eb',
+      },
+    ],
+    labels: [
+      { text: 'SLEEVE', position: { x: 140, y: 250 }, type: 'title' },
+      { text: '(CUT 2)', position: { x: 145, y: 275 }, type: 'subtitle' },
+      { text: 'Bicep: 36cm • Cap: 15cm', position: { x: 105, y: 300 }, type: 'meta' },
+      { text: 'Length: 60cm • Cuff: 22cm', position: { x: 100, y: 320 }, type: 'guide' },
+    ],
+    measurements: {
+      sleeveLength: 60.0,
+      sleeveCapLength: 15.0,
+      hemWidth: 22.0,
+    },
+  };
+
+  // 4. COLLAR (CUT 2): 44cm x 4.5cm
+  const collar: PatternComponent = {
+    id: 'shirt-collar',
+    pieceCode: 'COL',
+    name: 'COLLAR (CUT 2)',
+    cutInstruction: 'Cut 2 (Upper & Under Collar)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 1020, y: 150 },
+    grainline: {
+      start: { x: 40, y: 22.5 },
+      end: { x: 400, y: 22.5 },
+      label: 'GRAINLINE ↔ COLLAR',
+    },
+    paths: [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 0, name: 'Collar TL' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 440, y: 0, name: 'Collar TR' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 440, y: 45, name: 'Collar BR' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 0, y: 45, name: 'Collar BL' }] },
+      { type: 'Z', zone: 'neck', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'collar-stitching-line',
+        name: 'Stitching Line',
+        type: 'line',
+        points: [{ x: 10, y: 10 }, { x: 430, y: 10 }, { x: 430, y: 35 }, { x: 10, y: 35 }, { x: 10, y: 10 }],
+        closed: true,
+        color: '#2563eb',
+      },
+    ],
+    notches: [{ x: 220, y: 45, name: 'Collar Center Notch', isNotch: true }],
+    labels: [
+      { text: 'COLLAR (CUT 2)', position: { x: 155, y: 24 }, type: 'title' },
+      { text: '44cm × 4.5cm', position: { x: 180, y: 38 }, type: 'meta' },
+    ],
+    measurements: {
+      halfChest: 44.0,
+    },
+  };
+
+  // 5. COLLAR STAND (CUT 2): 44cm x 3cm
+  const collarStand: PatternComponent = {
+    id: 'shirt-collar-stand',
+    pieceCode: 'STD',
+    name: 'COLLAR STAND (CUT 2)',
+    cutInstruction: 'Cut 2 (Inner & Outer Stand)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 1020, y: 225 },
+    grainline: {
+      start: { x: 40, y: 15 },
+      end: { x: 400, y: 15 },
+      label: 'GRAINLINE ↔ STAND',
+    },
+    paths: [
+      { type: 'M', zone: 'neck', points: [{ x: 0, y: 0, name: 'Stand TL' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 440, y: 0, name: 'Stand TR' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 440, y: 30, name: 'Stand BR' }] },
+      { type: 'L', zone: 'neck', points: [{ x: 0, y: 30, name: 'Stand BL' }] },
+      { type: 'Z', zone: 'neck', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'stand-stitching-line',
+        name: 'Stitching Line',
+        type: 'line',
+        points: [{ x: 10, y: 10 }, { x: 430, y: 10 }, { x: 430, y: 20 }, { x: 10, y: 20 }, { x: 10, y: 10 }],
+        closed: true,
+        color: '#2563eb',
+      },
+    ],
+    notches: [{ x: 220, y: 30, name: 'Stand Center Notch', isNotch: true }],
+    labels: [
+      { text: 'COLLAR STAND (CUT 2)', position: { x: 135, y: 17 }, type: 'title' },
+      { text: '44cm × 3cm', position: { x: 180, y: 27 }, type: 'meta' },
+    ],
+    measurements: {
+      halfChest: 44.0,
+    },
+  };
+
+  // 6. POCKET (CUT 1): 13cm x 14cm with pointed chevron bottom
+  const pocket: PatternComponent = {
+    id: 'shirt-pocket',
+    pieceCode: 'PKT',
+    name: 'POCKET (CUT 1)',
+    cutInstruction: 'Cut 1 (Chest Patch Pocket)',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 1020, y: 285 },
+    grainline: {
+      start: { x: 65, y: 20 },
+      end: { x: 65, y: 90 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      { type: 'M', zone: 'hem', points: [{ x: 0, y: 0, name: 'Pocket TL' }] },
+      { type: 'L', zone: 'hem', points: [{ x: 130, y: 0, name: 'Pocket TR' }] },
+      { type: 'L', zone: 'hem', points: [{ x: 130, y: 110, name: 'Pocket MR' }] },
+      { type: 'L', zone: 'hem', points: [{ x: 65, y: 140, name: 'Pocket Point' }] },
+      { type: 'L', zone: 'hem', points: [{ x: 0, y: 110, name: 'Pocket ML' }] },
+      { type: 'Z', zone: 'hem', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'pocket-stitching-line',
+        name: 'Stitching Line',
+        type: 'line',
+        points: [
+          { x: 10, y: 10 },
+          { x: 120, y: 10 },
+          { x: 120, y: 105 },
+          { x: 65, y: 130 },
+          { x: 10, y: 105 },
+          { x: 10, y: 10 },
+        ],
+        closed: true,
+        color: '#2563eb',
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'POCKET (CUT 1)', position: { x: 25, y: 55 }, type: 'title' },
+      { text: '13cm × 14cm', position: { x: 32, y: 75 }, type: 'meta' },
+    ],
+    measurements: {
+      length: 14.0,
+    },
+  };
+
+  // 7. BACK YOKE (CUT 1): 44cm x 8cm with contoured lower edge
+  const backYoke: PatternComponent = {
+    id: 'shirt-back-yoke',
+    pieceCode: 'BYK',
+    name: 'BACK YOKE (CUT 1)',
+    cutInstruction: 'Cut 1 on Fold',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 620, y: 680 },
+    grainline: {
+      start: { x: 50, y: 40 },
+      end: { x: 390, y: 40 },
+      label: 'GRAINLINE ↔ BACK YOKE',
+    },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 0, name: 'Yoke TL' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 440, y: 0, name: 'Yoke TR' }] },
+      { type: 'L', zone: 'armhole', points: [{ x: 440, y: 80, name: 'Yoke BR' }] },
+      {
+        type: 'C',
+        zone: 'shoulder',
+        points: [
+          { x: 330, y: 90, isControl: true },
+          { x: 110, y: 90, isControl: true },
+          { x: 0, y: 80, name: 'Yoke BL' },
+        ],
+        annotation: 'Contoured Lower Yoke Seam',
+      },
+      { type: 'Z', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'back-yoke-center-line',
+        name: 'Centre Line',
+        type: 'line',
+        points: [{ x: 220, y: 0 }, { x: 220, y: 85 }],
+        color: '#dc2626',
+      },
+    ],
+    notches: [{ x: 220, y: 80, name: 'Yoke Center Notch', isNotch: true }],
+    labels: [
+      { text: 'BACK YOKE (CUT 1)', position: { x: 150, y: 40 }, type: 'title' },
+      { text: '44cm × 8cm', position: { x: 180, y: 60 }, type: 'meta' },
+    ],
+    measurements: {
+      shoulderWidth: 44.0,
+    },
+  };
+
+  // 8. FRONT YOKE (CUT 2): 22cm x 8cm
+  const frontYoke: PatternComponent = {
+    id: 'shirt-front-yoke',
+    pieceCode: 'FYK',
+    name: 'FRONT YOKE (CUT 2)',
+    cutInstruction: 'Cut 2 (Left & Right)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 1020, y: 40 },
+    grainline: {
+      start: { x: 110, y: 20 },
+      end: { x: 110, y: 65 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 0, name: 'FYoke TL' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: 220, y: 0, name: 'FYoke TR' }] },
+      { type: 'L', zone: 'armhole', points: [{ x: 220, y: 80, name: 'FYoke BR' }] },
+      {
+        type: 'C',
+        zone: 'shoulder',
+        points: [
+          { x: 160, y: 90, isControl: true },
+          { x: 60, y: 90, isControl: true },
+          { x: 0, y: 80, name: 'FYoke BL' },
+        ],
+        annotation: 'Front Yoke Lower Curve',
+      },
+      { type: 'Z', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+    ],
+    notches: [],
+    labels: [
+      { text: 'FRONT YOKE (CUT 2)', position: { x: 45, y: 40 }, type: 'title' },
+      { text: '22cm × 8cm', position: { x: 65, y: 60 }, type: 'meta' },
+    ],
+    measurements: {
+      shoulderWidth: 22.0,
+    },
+  };
+
+  // 9. CUFF (CUT 2): 22cm x 11cm
+  const cuff: PatternComponent = {
+    id: 'shirt-cuff',
+    pieceCode: 'CUF',
+    name: 'CUFF (CUT 2)',
+    cutInstruction: 'Cut 2 (Pair)',
+    quantity: 2,
+    seamAllowanceMm: 10,
+    offset: { x: 1020, y: 455 },
+    grainline: {
+      start: { x: 30, y: 27.5 },
+      end: { x: 190, y: 27.5 },
+      label: 'GRAINLINE ↔ CUFF',
+    },
+    paths: [
+      { type: 'M', zone: 'sleeve-hem', points: [{ x: 0, y: 0, name: 'Cuff TL' }] },
+      { type: 'L', zone: 'sleeve-hem', points: [{ x: 220, y: 0, name: 'Cuff TR' }] },
+      { type: 'L', zone: 'sleeve-hem', points: [{ x: 220, y: 110, name: 'Cuff BR' }] },
+      { type: 'L', zone: 'sleeve-hem', points: [{ x: 0, y: 110, name: 'Cuff BL' }] },
+      { type: 'Z', zone: 'sleeve-hem', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'cuff-fold-line',
+        name: 'Center Fold Line',
+        type: 'line',
+        points: [{ x: 0, y: 55 }, { x: 220, y: 55 }],
+        color: '#16a34a',
+      },
+      {
+        id: 'cuff-stitching-line',
+        name: 'Stitching Line',
+        type: 'line',
+        points: [{ x: 10, y: 10 }, { x: 210, y: 10 }, { x: 210, y: 100 }, { x: 10, y: 100 }, { x: 10, y: 10 }],
+        closed: true,
+        color: '#2563eb',
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'CUFF (CUT 2)', position: { x: 70, y: 35 }, type: 'title' },
+      { text: '22cm × 11cm', position: { x: 75, y: 85 }, type: 'meta' },
+    ],
+    measurements: {
+      hemWidth: 22.0,
+      length: 11.0,
+    },
+  };
+
+  // 10. PLACKET (CUT 1): 4cm x 76cm
+  const placket: PatternComponent = {
+    id: 'shirt-placket',
+    pieceCode: 'PLK',
+    name: 'PLACKET (CUT 1)',
+    cutInstruction: 'Cut 1 (Center Front Band)',
+    quantity: 1,
+    seamAllowanceMm: 10,
+    offset: { x: 1280, y: 40 },
+    grainline: {
+      start: { x: 20, y: 50 },
+      end: { x: 20, y: 710 },
+      label: 'GRAINLINE ↕',
+    },
+    paths: [
+      { type: 'M', zone: 'waist', points: [{ x: 0, y: 0, name: 'Placket TL' }] },
+      { type: 'L', zone: 'waist', points: [{ x: 40, y: 0, name: 'Placket TR' }] },
+      { type: 'L', zone: 'waist', points: [{ x: 40, y: 760, name: 'Placket BR' }] },
+      { type: 'L', zone: 'waist', points: [{ x: 0, y: 760, name: 'Placket BL' }] },
+      { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+    ],
+    internals: [
+      {
+        id: 'placket-stitch-line',
+        name: 'Stitching Line',
+        type: 'line',
+        points: [{ x: 20, y: 10 }, { x: 20, y: 750 }],
+        color: '#2563eb',
+      },
+    ],
+    notches: [],
+    labels: [
+      { text: 'PLACKET (CUT 1)', position: { x: 3, y: 360 }, type: 'title' },
+      { text: '4cm × 76cm', position: { x: 3, y: 390 }, type: 'meta' },
+    ],
+    measurements: {
+      length: 76.0,
     },
   };
 
   return {
-    id: 'garment-shirt-003',
-    name: 'Casual Button-Up Shirt',
+    id: 'garment-mens-shirt-001',
+    name: "Men's Shirt – Basic Pattern",
     category: 'shirt',
-    version: 'v1.0',
-    baseSize: 'S',
-    currentSize: 'S',
+    version: 'v2.0 (Master Spec)',
+    baseSize: 'M',
+    currentSize: 'M',
     position: { x: 0, y: 0 },
-    components: [front, back, sleeve, collarStand],
-    sizeTable: DEFAULT_SIZE_TABLE,
+    components: [
+      front,
+      back,
+      sleeve,
+      collar,
+      collarStand,
+      pocket,
+      backYoke,
+      frontYoke,
+      cuff,
+      placket,
+    ],
+    sizeTable: MENS_SHIRT_SIZE_TABLE,
     gradeHistory: [],
   };
+}
+
+export function createCasualShirt(): Garment {
+  return createMensShirtBasicPattern();
 }
 
 export function createChinoTrouser(): Garment {

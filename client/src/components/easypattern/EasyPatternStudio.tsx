@@ -16,6 +16,11 @@ import {
   BASIC_BODICE_SIZE_TABLE,
 } from '@shared/easyPatternConstants';
 import {
+  createMensShirtBasicPattern,
+  MENS_SHIRT_SIZE_TABLE,
+} from '@shared/constants';
+import { MensShirtMasterModal } from './MensShirtMasterModal';
+import {
   MousePointer,
   Dot,
   Minus,
@@ -135,16 +140,52 @@ export const EasyPatternStudio: React.FC = () => {
   const [newFabricType, setNewFabricType] = useState('Cotton Jersey');
   const [newFabricColor, setNewFabricColor] = useState('#3b82f6');
 
-  // Measurements
+  // Measurements (Pre-configured with Men's Shirt Basic Pattern Image 1 Spec)
   const [newMeasurements, setNewMeasurements] = useState({
-    bustChest: 92.0,
-    waist: 72.0,
-    hip: 96.0,
-    shoulderWidth: 13.0,
-    backLength: 42.0,
-    armholeDepth: 22.0,
-    neckGirth: 36.0,
+    bustChest: 100.0,
+    waist: 92.0,
+    hip: 100.0,
+    shoulderWidth: 44.0,
+    backLength: 76.0,
+    armholeDepth: 26.0,
+    neckGirth: 40.0,
+    sleeveLength: 60.0,
+    collarWidth: 4.5,
+    cuffWidth: 11.0,
   });
+
+  const [isShirtMasterModalOpen, setIsShirtMasterModalOpen] = useState(false);
+  const [previewViewMode, setPreviewViewMode] = useState<'pieces' | 'marker'>('pieces');
+
+  const loadMensShirtImage1Spec = () => {
+    setNewProductName("Men's Shirt – Basic Pattern");
+    setNewProductCategory('Men');
+    setNewProductArchetype('shirt');
+    setNewSilhouetteFit('regular');
+    setNewNecklineStyle('shirt-collar');
+    setNewDartStyle('dartless');
+    setNewSleeveStyle('long');
+    setNewHemLength('tunic');
+    setNewHemShape('shirttail');
+    setNewClosure('button-placket');
+    setNewPocket('chest-patch');
+    setNewSeamAllowance(1.0);
+    setNewFabricType('Poplin Cotton');
+    setNewFabricColor('#3b82f6');
+    setNewMeasurements({
+      bustChest: 100.0,
+      waist: 92.0,
+      hip: 100.0,
+      shoulderWidth: 44.0,
+      backLength: 76.0,
+      armholeDepth: 26.0,
+      neckGirth: 40.0,
+      sleeveLength: 60.0,
+      collarWidth: 4.5,
+      cuffWidth: 11.0,
+    });
+    showToast("Loaded Men's Shirt Master Technical Specification (Image 1 Match)!");
+  };
 
   const [activeSubModal, setActiveSubModal] = useState<
     'settings' | 'library' | 'tutorial' | 'recent' | null
@@ -266,6 +307,396 @@ export const EasyPatternStudio: React.FC = () => {
 
   // Compile custom product from scratch
   const generateCustomGarmentProduct = (): Garment => {
+    // 👔 MEN'S SHIRT MASTER PATTERN (IMAGE 1 SPECIFICATION)
+    if (newProductArchetype === 'shirt' || newProductName.toLowerCase().includes('shirt')) {
+      const chestEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
+      const totalChest = newMeasurements.bustChest + chestEase;
+      const frontWidth = Math.round((totalChest / 4) * 10); // 250mm
+      const backWidth = frontWidth;
+      const backLen = Math.round(newMeasurements.backLength * 10); // 760mm
+      const scyeDepth = Math.round(newMeasurements.armholeDepth * 10); // 260mm
+      const slvLen = Math.round(newMeasurements.sleeveLength * 10); // 600mm
+      const cuffWidth = Math.round(newMeasurements.cuffWidth * 20); // 220mm
+      const collarWidth = Math.round((newMeasurements.neckGirth + 4) * 10); // 440mm
+      const collarHt = Math.round(newMeasurements.collarWidth * 10); // 45mm
+      const yokeWidth = Math.round(newMeasurements.shoulderWidth * 10); // 440mm
+      const fYokeWidth = Math.round(yokeWidth / 2); // 220mm
+      const sa = Math.round(newSeamAllowance * 10);
+
+      const shirtComponents: PatternComponent[] = [
+        // 1. FRONT (CUT 2)
+        {
+          id: 'shirt-front',
+          pieceCode: 'FR',
+          name: `${newProductName} (Front Piece)`,
+          cutInstruction: 'Cut 2 (Left & Right) • 3cm Front Placket Fold',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: 0, y: 0 },
+          grainline: {
+            start: { x: 45, y: 120 },
+            end: { x: 45, y: Math.max(160, backLen - 60) },
+            label: 'GRAINLINE ↕ CF',
+          },
+          paths: [
+            { type: 'M', zone: 'center-fold', points: [{ x: 0, y: 70, name: 'Center Front Neck' }] },
+            {
+              type: 'C',
+              zone: 'neck',
+              points: [
+                { x: 20, y: 70, isControl: true },
+                { x: 55, y: 30, isControl: true },
+                { x: 70, y: 0, name: 'HPS Neck Point' },
+              ],
+              annotation: 'Neck Curve (7cm drop, 11.5cm width)',
+            },
+            { type: 'L', zone: 'shoulder', points: [{ x: 185, y: 25, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam (11.5cm)' },
+            {
+              type: 'C',
+              zone: 'armhole',
+              points: [
+                { x: 190, y: 150, isControl: true },
+                { x: 210, y: 240, isControl: true },
+                { x: frontWidth, y: scyeDepth, name: 'Underarm Scye Point' },
+              ],
+              annotation: 'Armhole Scye (26cm Depth)',
+            },
+            { type: 'L', zone: 'waist', points: [{ x: frontWidth, y: backLen, name: 'Side Hem Point' }], annotation: 'Side Seam (50cm)' },
+            { type: 'L', zone: 'hem', points: [{ x: 0, y: backLen, name: 'Center Front Hem' }], annotation: 'Hem Width (25cm)' },
+            { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 70 }] },
+          ],
+          notches: [
+            { x: 205, y: 160, name: 'Armhole Front Notch', isNotch: true },
+            { x: 30, y: backLen, name: 'Placket Fold Notch', isNotch: true },
+            { x: frontWidth, y: backLen - 30, name: 'Hem 3cm Notch', isNotch: true },
+          ],
+          internals: [
+            {
+              id: 'front-placket-fold-line',
+              name: 'Placket Fold Line (3cm)',
+              type: 'line',
+              points: [{ x: 30, y: 70 }, { x: 30, y: backLen }],
+              color: '#16a34a',
+            },
+            {
+              id: 'front-chest-pocket-placement',
+              name: 'Chest Pocket Placement (13cm × 14cm)',
+              type: 'pocket',
+              points: [
+                { x: 60, y: 320 },
+                { x: 190, y: 320 },
+                { x: 190, y: 430 },
+                { x: 125, y: 460 },
+                { x: 60, y: 430 },
+                { x: 60, y: 320 },
+              ],
+              closed: true,
+              color: '#2563eb',
+            },
+          ],
+          labels: [
+            { text: 'FRONT', position: { x: 90, y: 210 }, type: 'title' },
+            { text: '(CUT 2)', position: { x: 90, y: 235 }, type: 'subtitle' },
+            { text: `Width: ${frontWidth / 10}cm • Length: ${backLen / 10}cm`, position: { x: 55, y: 260 }, type: 'meta' },
+          ],
+          measurements: {
+            halfChest: totalChest / 2,
+            length: backLen / 10,
+            bodyLength: backLen / 10,
+            armholeLength: scyeDepth / 10,
+            shoulderLength: 11.5,
+          },
+        },
+        // 2. BACK (CUT 1)
+        {
+          id: 'shirt-back',
+          pieceCode: 'BK',
+          name: `${newProductName} (Back Piece)`,
+          cutInstruction: 'Cut 1 on Fold • Center Fold Line',
+          quantity: 1,
+          seamAllowanceMm: sa,
+          offset: { x: frontWidth + 50, y: 0 },
+          grainline: {
+            start: { x: 40, y: 100 },
+            end: { x: 40, y: Math.max(160, backLen - 60) },
+            label: 'GRAINLINE ↕ CB FOLD',
+          },
+          paths: [
+            { type: 'M', zone: 'center-fold', points: [{ x: 0, y: 25, name: 'Center Back Neck' }] },
+            {
+              type: 'C',
+              zone: 'neck',
+              points: [
+                { x: 25, y: 25, isControl: true },
+                { x: 55, y: 15, isControl: true },
+                { x: 70, y: 0, name: 'Back HPS Neck' },
+              ],
+            },
+            { type: 'L', zone: 'shoulder', points: [{ x: 210, y: 25, name: 'Back Shoulder Tip' }] },
+            {
+              type: 'C',
+              zone: 'armhole',
+              points: [
+                { x: 205, y: 140, isControl: true },
+                { x: 215, y: 230, isControl: true },
+                { x: backWidth, y: scyeDepth, name: 'Back Underarm Scye' },
+              ],
+            },
+            { type: 'L', zone: 'waist', points: [{ x: backWidth, y: backLen, name: 'Back Side Hem' }] },
+            { type: 'L', zone: 'hem', points: [{ x: 0, y: backLen, name: 'Center Back Hem' }] },
+            { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 25 }] },
+          ],
+          notches: [
+            { x: 205, y: 145, name: 'Back Double Notch 1', isNotch: true },
+            { x: 205, y: 155, name: 'Back Double Notch 2', isNotch: true },
+          ],
+          labels: [
+            { text: 'BACK', position: { x: 95, y: 210 }, type: 'title' },
+            { text: '(CUT 1)', position: { x: 95, y: 235 }, type: 'subtitle' },
+            { text: `Width: ${backWidth / 10}cm • Length: ${backLen / 10}cm`, position: { x: 60, y: 260 }, type: 'meta' },
+          ],
+          measurements: {
+            halfChest: totalChest / 2,
+            length: backLen / 10,
+            bodyLength: backLen / 10,
+            armholeLength: scyeDepth / 10,
+            shoulderLength: 14.0,
+            shoulderWidth: 21.0,
+          },
+        },
+        // 3. SLEEVE (CUT 2)
+        {
+          id: 'shirt-sleeve',
+          pieceCode: 'SLV',
+          name: `${newProductName} (Sleeve Pair)`,
+          cutInstruction: 'Cut 2 (Left & Right Pair)',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2, y: 0 },
+          grainline: {
+            start: { x: 180, y: 40 },
+            end: { x: 180, y: slvLen - 40 },
+            label: 'GRAINLINE ↕ SLEEVE CENTER',
+          },
+          paths: [
+            { type: 'M', zone: 'sleeve-seam', points: [{ x: 0, y: 150, name: 'Front Underarm Bicep' }] },
+            {
+              type: 'C',
+              zone: 'sleeve-cap',
+              points: [
+                { x: 60, y: 70, isControl: true },
+                { x: 120, y: 0, isControl: true },
+                { x: 180, y: 0, name: 'Sleeve Cap Crown' },
+              ],
+            },
+            {
+              type: 'C',
+              zone: 'sleeve-cap',
+              points: [
+                { x: 240, y: 0, isControl: true },
+                { x: 300, y: 70, isControl: true },
+                { x: 360, y: 150, name: 'Back Underarm Bicep' },
+              ],
+            },
+            { type: 'L', zone: 'sleeve-seam', points: [{ x: 290, y: slvLen, name: 'Back Cuff Hem' }] },
+            { type: 'L', zone: 'sleeve-hem', points: [{ x: 70, y: slvLen, name: 'Front Cuff Hem' }] },
+            { type: 'Z', zone: 'sleeve-seam', points: [{ x: 0, y: 150 }] },
+          ],
+          notches: [
+            { x: 180, y: 0, name: 'Crown Notch', isNotch: true },
+            { x: 70, y: 60, name: 'Front Pitch', isNotch: true },
+            { x: 290, y: 60, name: 'Back Pitch', isNotch: true },
+          ],
+          labels: [
+            { text: 'SLEEVE', position: { x: 140, y: 250 }, type: 'title' },
+            { text: '(CUT 2)', position: { x: 145, y: 275 }, type: 'subtitle' },
+            { text: `Bicep: 36cm • Length: ${slvLen / 10}cm`, position: { x: 105, y: 300 }, type: 'meta' },
+          ],
+          measurements: {
+            sleeveLength: slvLen / 10,
+            sleeveCapLength: 15.0,
+            hemWidth: cuffWidth / 10,
+          },
+        },
+        // 4. COLLAR (CUT 2)
+        {
+          id: 'shirt-collar',
+          pieceCode: 'COL',
+          name: 'COLLAR (CUT 2)',
+          cutInstruction: 'Cut 2 (Upper & Under Collar)',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 400, y: 0 },
+          grainline: { start: { x: 40, y: 22.5 }, end: { x: collarWidth - 40, y: 22.5 }, label: 'GRAINLINE ↔ COLLAR' },
+          paths: [
+            { type: 'M', zone: 'neck', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'neck', points: [{ x: collarWidth, y: 0 }] },
+            { type: 'L', zone: 'neck', points: [{ x: collarWidth, y: collarHt }] },
+            { type: 'L', zone: 'neck', points: [{ x: 0, y: collarHt }] },
+            { type: 'Z', zone: 'neck', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'COLLAR (CUT 2)', position: { x: 155, y: 24 }, type: 'title' }],
+          notches: [],
+          measurements: { halfChest: collarWidth / 10 },
+        },
+        // 5. COLLAR STAND (CUT 2)
+        {
+          id: 'shirt-collar-stand',
+          pieceCode: 'STD',
+          name: 'COLLAR STAND (CUT 2)',
+          cutInstruction: 'Cut 2 (Inner & Outer Stand)',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 400, y: 70 },
+          grainline: { start: { x: 40, y: 15 }, end: { x: collarWidth - 40, y: 15 }, label: 'GRAINLINE ↔ STAND' },
+          paths: [
+            { type: 'M', zone: 'neck', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'neck', points: [{ x: collarWidth, y: 0 }] },
+            { type: 'L', zone: 'neck', points: [{ x: collarWidth, y: 30 }] },
+            { type: 'L', zone: 'neck', points: [{ x: 0, y: 30 }] },
+            { type: 'Z', zone: 'neck', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'COLLAR STAND (CUT 2)', position: { x: 135, y: 17 }, type: 'title' }],
+          notches: [],
+          measurements: { halfChest: collarWidth / 10 },
+        },
+        // 6. POCKET (CUT 1)
+        {
+          id: 'shirt-pocket',
+          pieceCode: 'PKT',
+          name: 'POCKET (CUT 1)',
+          cutInstruction: 'Cut 1 (Chest Patch Pocket)',
+          quantity: 1,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 400, y: 130 },
+          grainline: { start: { x: 65, y: 20 }, end: { x: 65, y: 90 }, label: 'GRAINLINE ↕' },
+          paths: [
+            { type: 'M', zone: 'hem', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'hem', points: [{ x: 130, y: 0 }] },
+            { type: 'L', zone: 'hem', points: [{ x: 130, y: 110 }] },
+            { type: 'L', zone: 'hem', points: [{ x: 65, y: 140 }] },
+            { type: 'L', zone: 'hem', points: [{ x: 0, y: 110 }] },
+            { type: 'Z', zone: 'hem', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'POCKET (CUT 1)', position: { x: 25, y: 55 }, type: 'title' }],
+          notches: [],
+          measurements: { length: 14 },
+        },
+        // 7. BACK YOKE (CUT 1)
+        {
+          id: 'shirt-back-yoke',
+          pieceCode: 'BYK',
+          name: 'BACK YOKE (CUT 1)',
+          cutInstruction: 'Cut 1 on Fold',
+          quantity: 1,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2, y: slvLen + 40 },
+          grainline: { start: { x: 50, y: 40 }, end: { x: yokeWidth - 50, y: 40 }, label: 'GRAINLINE ↔ BACK YOKE' },
+          paths: [
+            { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'shoulder', points: [{ x: yokeWidth, y: 0 }] },
+            { type: 'L', zone: 'armhole', points: [{ x: yokeWidth, y: 80 }] },
+            {
+              type: 'C',
+              zone: 'shoulder',
+              points: [
+                { x: Math.round(yokeWidth * 0.75), y: 90, isControl: true },
+                { x: Math.round(yokeWidth * 0.25), y: 90, isControl: true },
+                { x: 0, y: 80 },
+              ],
+            },
+            { type: 'Z', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'BACK YOKE (CUT 1)', position: { x: 150, y: 40 }, type: 'title' }],
+          notches: [],
+          measurements: { shoulderWidth: yokeWidth / 10 },
+        },
+        // 8. FRONT YOKE (CUT 2)
+        {
+          id: 'shirt-front-yoke',
+          pieceCode: 'FYK',
+          name: 'FRONT YOKE (CUT 2)',
+          cutInstruction: 'Cut 2 (Pair)',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 400, y: 310 },
+          grainline: { start: { x: 110, y: 20 }, end: { x: 110, y: 65 }, label: 'GRAINLINE ↕' },
+          paths: [
+            { type: 'M', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'shoulder', points: [{ x: fYokeWidth, y: 0 }] },
+            { type: 'L', zone: 'armhole', points: [{ x: fYokeWidth, y: 80 }] },
+            {
+              type: 'C',
+              zone: 'shoulder',
+              points: [
+                { x: Math.round(fYokeWidth * 0.72), y: 90, isControl: true },
+                { x: Math.round(fYokeWidth * 0.28), y: 90, isControl: true },
+                { x: 0, y: 80 },
+              ],
+            },
+            { type: 'Z', zone: 'shoulder', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'FRONT YOKE (CUT 2)', position: { x: 45, y: 40 }, type: 'title' }],
+          notches: [],
+          measurements: { shoulderWidth: fYokeWidth / 10 },
+        },
+        // 9. CUFF (CUT 2)
+        {
+          id: 'shirt-cuff',
+          pieceCode: 'CUF',
+          name: 'CUFF (CUT 2)',
+          cutInstruction: 'Cut 2 (Pair)',
+          quantity: 2,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 400, y: 420 },
+          grainline: { start: { x: 30, y: 27.5 }, end: { x: 190, y: 27.5 }, label: 'GRAINLINE ↔ CUFF' },
+          paths: [
+            { type: 'M', zone: 'sleeve-hem', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'sleeve-hem', points: [{ x: 220, y: 0 }] },
+            { type: 'L', zone: 'sleeve-hem', points: [{ x: 220, y: 110 }] },
+            { type: 'L', zone: 'sleeve-hem', points: [{ x: 0, y: 110 }] },
+            { type: 'Z', zone: 'sleeve-hem', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'CUFF (CUT 2)', position: { x: 70, y: 35 }, type: 'title' }],
+          notches: [],
+          measurements: { hemWidth: 22, length: 11 },
+        },
+        // 10. PLACKET (CUT 1)
+        {
+          id: 'shirt-placket',
+          pieceCode: 'PLK',
+          name: 'PLACKET (CUT 1)',
+          cutInstruction: 'Cut 1 (Center Front Band)',
+          quantity: 1,
+          seamAllowanceMm: sa,
+          offset: { x: (frontWidth + 50) * 2 + 660, y: 0 },
+          grainline: { start: { x: 20, y: 50 }, end: { x: 20, y: backLen - 50 }, label: 'GRAINLINE ↕' },
+          paths: [
+            { type: 'M', zone: 'waist', points: [{ x: 0, y: 0 }] },
+            { type: 'L', zone: 'waist', points: [{ x: 40, y: 0 }] },
+            { type: 'L', zone: 'waist', points: [{ x: 40, y: backLen }] },
+            { type: 'L', zone: 'waist', points: [{ x: 0, y: backLen }] },
+            { type: 'Z', zone: 'waist', points: [{ x: 0, y: 0 }] },
+          ],
+          labels: [{ text: 'PLACKET (CUT 1)', position: { x: 3, y: 360 }, type: 'title' }],
+          notches: [],
+          measurements: { length: backLen / 10 },
+        },
+      ];
+
+      return {
+        id: `shirt-prod-${Date.now()}`,
+        name: newProductName,
+        category: 'shirt',
+        version: 'v2.0 (Master Spec)',
+        baseSize: currentSize,
+        currentSize: currentSize,
+        position: { x: 0, y: 0 },
+        components: shirtComponents,
+        sizeTable: MENS_SHIRT_SIZE_TABLE,
+      };
+    }
+
     const bustEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
     const waistEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 3 : newSilhouetteFit === 'relaxed' ? 6 : 10;
 
@@ -1101,6 +1532,16 @@ export const EasyPatternStudio: React.FC = () => {
 
         {/* Right Action Switchers */}
         <div className="flex items-center gap-2">
+          {/* Men's Shirt Master Spec Sheet (Image 1 Exact Match) */}
+          <button
+            onClick={() => setIsShirtMasterModalOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 text-white border border-blue-500 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-blue-900/20"
+            title="Open Men's Shirt Basic Pattern Technical Specification & Measurement Sheet (Image 1 Match)"
+          >
+            <Shirt className="w-3.5 h-3.5 text-blue-200" />
+            <span className="hidden sm:inline">Men's Shirt Master Spec (Image 1)</span>
+          </button>
+
           {/* Workflow Guide Button */}
           <button
             onClick={() => setIsWorkflowModalOpen(true)}
@@ -1266,6 +1707,77 @@ export const EasyPatternStudio: React.FC = () => {
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                           1. Product Name & Category
                         </label>
+                      </div>
+
+                      {/* Image 1 Master Spec Quick-Load Banner */}
+                      <div className="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 rounded-xl border border-blue-200 flex items-center justify-between shadow-2xs">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">👔</span>
+                            <span className="font-extrabold text-xs text-blue-950">Men's Shirt – Basic Pattern</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-black uppercase">
+                              Image 1 Match
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-600 mt-0.5 font-medium">
+                            Chest 100cm • Waist 92cm • 10 CAD pieces with full technical dimensions & seam rules.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={loadMensShirtImage1Spec}
+                            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-xs transition-all"
+                          >
+                            Load Spec
+                          </button>
+                          <button
+                            onClick={() => setIsShirtMasterModalOpen(true)}
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 shadow-2xs"
+                            title="View Full Technical Master Sheet (Image 1)"
+                          >
+                            <Info className="w-3.5 h-3.5 text-blue-700" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Archetype Selector */}
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-500 mb-1.5">Garment Archetype:</div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: 'shirt', name: "Men's Shirt (Image 1)", icon: '👔', cat: 'Men' },
+                            { id: 'basic-bodice', name: "Tailored Bodice", icon: '👗', cat: 'Women' },
+                            { id: 'basic-tshirt', name: "Crew T-Shirt", icon: '👕', cat: 'Unisex' },
+                            { id: 'trouser', name: "Chino Trouser", icon: '👖', cat: 'Men' },
+                          ].map((arch) => (
+                            <button
+                              key={arch.id}
+                              onClick={() => {
+                                setNewProductArchetype(arch.id as any);
+                                if (arch.id === 'shirt') {
+                                  loadMensShirtImage1Spec();
+                                } else if (arch.id === 'basic-bodice') {
+                                  setNewProductName("Women's Tailored Bodice");
+                                  setNewProductCategory('Women');
+                                } else if (arch.id === 'basic-tshirt') {
+                                  setNewProductName('Basic Crew T-Shirt');
+                                  setNewProductCategory('Unisex');
+                                } else if (arch.id === 'trouser') {
+                                  setNewProductName('Chino Trouser');
+                                  setNewProductCategory('Men');
+                                }
+                              }}
+                              className={`p-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                                newProductArchetype === arch.id
+                                  ? 'bg-blue-600 text-white shadow-xs'
+                                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span>{arch.icon}</span>
+                              <span className="truncate">{arch.name}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <input
@@ -1515,9 +2027,14 @@ export const EasyPatternStudio: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Measurements Grid (Image 1 Technical Specs) */}
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                          <span className="text-[11px] text-slate-500 font-medium">Bust / Chest:</span>
+                        {/* 1. Chest */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Chest / Bust:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 100cm</span>
+                          </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="font-mono font-bold text-slate-800">{newMeasurements.bustChest} cm</span>
                             <div className="flex items-center gap-1">
@@ -1528,7 +2045,7 @@ export const EasyPatternStudio: React.FC = () => {
                                 -
                               </button>
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, bustChest: Math.min(130, +(m.bustChest + 1).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, bustChest: Math.min(140, +(m.bustChest + 1).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 +
@@ -1537,8 +2054,12 @@ export const EasyPatternStudio: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                          <span className="text-[11px] text-slate-500 font-medium">Waist:</span>
+                        {/* 2. Waist */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Waist:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 92cm</span>
+                          </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="font-mono font-bold text-slate-800">{newMeasurements.waist} cm</span>
                             <div className="flex items-center gap-1">
@@ -1549,7 +2070,7 @@ export const EasyPatternStudio: React.FC = () => {
                                 -
                               </button>
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, waist: Math.min(120, +(m.waist + 1).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, waist: Math.min(130, +(m.waist + 1).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 +
@@ -1558,19 +2079,48 @@ export const EasyPatternStudio: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                          <span className="text-[11px] text-slate-500 font-medium">Shoulder Width:</span>
+                        {/* 3. Hip */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Hip:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 100cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.hip} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, hip: Math.max(60, +(m.hip - 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, hip: Math.min(140, +(m.hip + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4. Shoulder Width */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Shoulder Width:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 44cm</span>
+                          </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="font-mono font-bold text-slate-800">{newMeasurements.shoulderWidth} cm</span>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.max(9, +(m.shoulderWidth - 0.5).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.max(30, +(m.shoulderWidth - 1).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 -
                               </button>
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.min(20, +(m.shoulderWidth + 0.5).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, shoulderWidth: Math.min(60, +(m.shoulderWidth + 1).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 +
@@ -1579,19 +2129,148 @@ export const EasyPatternStudio: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                          <span className="text-[11px] text-slate-500 font-medium">Back Length:</span>
+                        {/* 5. Back Length */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Back Length:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 76cm</span>
+                          </div>
                           <div className="flex items-center justify-between mt-1">
                             <span className="font-mono font-bold text-slate-800">{newMeasurements.backLength} cm</span>
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.max(30, +(m.backLength - 1).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.max(40, +(m.backLength - 1).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 -
                               </button>
                               <button
-                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.min(80, +(m.backLength + 1).toFixed(1)) }))}
+                                onClick={() => setNewMeasurements((m) => ({ ...m, backLength: Math.min(100, +(m.backLength + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 6. Sleeve Length */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Sleeve Length:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 60cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.sleeveLength} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, sleeveLength: Math.max(30, +(m.sleeveLength - 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, sleeveLength: Math.min(80, +(m.sleeveLength + 1).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 7. Armhole Depth */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Armhole Depth:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 26cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.armholeDepth} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, armholeDepth: Math.max(18, +(m.armholeDepth - 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, armholeDepth: Math.min(36, +(m.armholeDepth + 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 8. Neck Circumference */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Neck Girth:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 40cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.neckGirth} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, neckGirth: Math.max(30, +(m.neckGirth - 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, neckGirth: Math.min(52, +(m.neckGirth + 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 9. Collar Width */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Collar Width:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 4.5cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.collarWidth} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, collarWidth: Math.max(2, +(m.collarWidth - 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, collarWidth: Math.min(8, +(m.collarWidth + 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 10. Cuff Width */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Cuff Width:</span>
+                            <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1 rounded">Img 1: 11cm</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono font-bold text-slate-800">{newMeasurements.cuffWidth} cm</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, cuffWidth: Math.max(6, +(m.cuffWidth - 0.5).toFixed(1)) }))}
+                                className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => setNewMeasurements((m) => ({ ...m, cuffWidth: Math.min(18, +(m.cuffWidth + 0.5).toFixed(1)) }))}
                                 className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
                               >
                                 +
@@ -1662,10 +2341,11 @@ export const EasyPatternStudio: React.FC = () => {
                   {/* Right Column: Live Real-Time Interactive Vector Pattern Preview */}
                   {(() => {
                     const previewGarment = generateCustomGarmentProduct();
+                    const isShirt = newProductArchetype === 'shirt' || newProductName.toLowerCase().includes('shirt');
                     return (
                       <div className="flex-1 h-full bg-[#0e1117] flex flex-col justify-between overflow-hidden relative">
                         {/* Preview Top Header HUD */}
-                        <div className="p-4 bg-[#141721] border-b border-zinc-800 flex items-center justify-between shrink-0">
+                        <div className="p-3 bg-[#141721] border-b border-zinc-800 flex items-center justify-between shrink-0 flex-wrap gap-2">
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1681,126 +2361,383 @@ export const EasyPatternStudio: React.FC = () => {
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
+                          {/* Mode Switcher: Pieces vs Cutting Marker vs Master Spec Sheet */}
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                              <button
+                                onClick={() => setPreviewViewMode('pieces')}
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                                  previewViewMode === 'pieces'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                🧩 Pattern Pieces ({previewGarment.components.length})
+                              </button>
+                              <button
+                                onClick={() => setPreviewViewMode('marker')}
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                                  previewViewMode === 'marker'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                📐 Cutting Layout (Marker)
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={() => setIsShirtMasterModalOpen(true)}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-indigo-200 text-[11px] font-bold transition-all flex items-center gap-1"
+                              title="Open Full Image 1 Technical Specification Sheet"
+                            >
+                              <Shirt className="w-3 h-3 text-indigo-300" />
+                              <span>Image 1 Spec</span>
+                              <Maximize2 className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-300">
                             <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                              Bust: {newMeasurements.bustChest}cm
+                              Chest: {newMeasurements.bustChest}cm
                             </span>
                             <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
                               Waist: {newMeasurements.waist}cm
+                            </span>
+                            <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
+                              Length: {newMeasurements.backLength}cm
                             </span>
                           </div>
                         </div>
 
                         {/* Interactive SVG Pattern Canvas */}
-                        <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden">
-                          <svg
-                            viewBox="-30 -30 920 620"
-                            className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
-                          >
-                            <defs>
-                              <pattern id="grid-pattern-step1" width="30" height="30" patternUnits="userSpaceOnUse">
-                                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                              </pattern>
-                            </defs>
-                            <rect x="-30" y="-30" width="920" height="620" fill="url(#grid-pattern-step1)" />
+                        <div className="flex-1 relative flex items-center justify-center p-4 overflow-hidden">
+                          {previewViewMode === 'marker' ? (
+                            /* EXACT IMAGE 1 CUTTING LAYOUT (SUGGESTION) MARKER VIEW */
+                            <svg
+                              viewBox="0 0 960 520"
+                              className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
+                            >
+                              <rect width="960" height="520" fill="#0b0f19" rx="8" />
+                              
+                              {/* Title Header Bar */}
+                              <rect x="20" y="15" width="920" height="32" fill="#1e293b" rx="6" />
+                              <text x="35" y="36" fill="#f8fafc" fontSize="13" fontWeight="bold" fontFamily="sans-serif">
+                                CUTTING LAYOUT (Suggestion) • Fabric Roll 110–140cm × 180–200cm
+                              </text>
+                              <text x="830" y="36" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">
+                                Efficiency: 89.2%
+                              </text>
 
-                            {/* Render All Components in Live Preview */}
-                            {previewGarment.components.map((comp) => {
-                              // Build SVG path string from component commands
-                              let d = '';
-                              comp.paths.forEach((cmd) => {
-                                if (cmd.type === 'M' && cmd.points[0]) {
-                                  d += `M ${cmd.points[0].x} ${cmd.points[0].y} `;
-                                } else if (cmd.type === 'L' && cmd.points[0]) {
-                                  d += `L ${cmd.points[0].x} ${cmd.points[0].y} `;
-                                } else if (cmd.type === 'C' && cmd.points.length >= 3) {
-                                  d += `C ${cmd.points[0].x} ${cmd.points[0].y}, ${cmd.points[1].x} ${cmd.points[1].y}, ${cmd.points[2].x} ${cmd.points[2].y} `;
-                                } else if (cmd.type === 'Z') {
-                                  d += 'Z ';
-                                }
-                              });
+                              {/* Fabric Roll Perimeter */}
+                              <rect
+                                x="40"
+                                y="65"
+                                width="840"
+                                height="400"
+                                fill="#151b28"
+                                stroke="#334155"
+                                strokeWidth="2"
+                                rx="4"
+                              />
 
-                              return (
-                                <g
-                                  key={comp.id}
-                                  transform={`translate(${comp.offset.x + 30}, ${comp.offset.y + 40})`}
-                                  className="transition-all duration-300"
-                                >
-                                  {/* Pattern Piece Shaded Body */}
-                                  <path
-                                    d={d}
-                                    fill={newFabricColor}
-                                    fillOpacity="0.18"
-                                    stroke={newFabricColor}
-                                    strokeWidth="2.5"
-                                    strokeLinejoin="round"
-                                    strokeLinecap="round"
-                                  />
+                              {/* Dimension Callouts on Fabric Roll */}
+                              {/* Bottom Length Arrow */}
+                              <line x1="120" y1="485" x2="800" y2="485" stroke="#38bdf8" strokeWidth="1.5" />
+                              <polygon points="120,485 130,481 130,489" fill="#38bdf8" />
+                              <polygon points="800,485 790,481 790,489" fill="#38bdf8" />
+                              <text x="460" y="502" fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle">
+                                Fabric Length (approx. 180–200 cm)
+                              </text>
 
-                                  {/* Seam Allowance Offset Line */}
-                                  <path
-                                    d={d}
-                                    fill="none"
-                                    stroke="#38bdf8"
-                                    strokeWidth="1.2"
-                                    strokeDasharray="4 3"
-                                    opacity="0.75"
-                                    transform={`scale(1.03)`}
-                                  />
+                              {/* Right Width Arrow */}
+                              <line x1="895" y1="75" x2="895" y2="455" stroke="#38bdf8" strokeWidth="1.5" />
+                              <polygon points="895,75 891,85 899,85" fill="#38bdf8" />
+                              <polygon points="895,455 891,445 899,445" fill="#38bdf8" />
+                              <text
+                                x="912"
+                                y="265"
+                                fill="#38bdf8"
+                                fontSize="11"
+                                fontWeight="bold"
+                                textAnchor="middle"
+                                transform="rotate(90, 912, 265)"
+                              >
+                                Fabric Width (approx. 110–140 cm)
+                              </text>
 
-                                  {/* Grainline Arrow */}
-                                  <line
-                                    x1={comp.grainline.start.x}
-                                    y1={comp.grainline.start.y}
-                                    x2={comp.grainline.end.x}
-                                    y2={comp.grainline.end.y}
-                                    stroke="#10b981"
-                                    strokeWidth="2"
-                                  />
-                                  <text
-                                    x={comp.grainline.start.x + 8}
-                                    y={(comp.grainline.start.y + comp.grainline.end.y) / 2}
-                                    fill="#10b981"
-                                    fontSize="10"
-                                    fontWeight="bold"
-                                    transform={`rotate(90, ${comp.grainline.start.x + 8}, ${(comp.grainline.start.y + comp.grainline.end.y) / 2})`}
+                              {/* Nested Piece 1: Front (Cut 2) */}
+                              <g transform="translate(60, 85)">
+                                <rect width="130" height="280" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="65" y="130" fill="#881337" fontSize="12" fontWeight="bold" textAnchor="middle">Front</text>
+                                <text x="65" y="150" fill="#881337" fontSize="10" textAnchor="middle">(Cut 2)</text>
+                              </g>
+
+                              {/* Nested Piece 2: Back (Cut 1) */}
+                              <g transform="translate(210, 85)">
+                                <rect width="130" height="280" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="65" y="130" fill="#881337" fontSize="12" fontWeight="bold" textAnchor="middle">Back</text>
+                                <text x="65" y="150" fill="#881337" fontSize="10" textAnchor="middle">(Cut 1)</text>
+                              </g>
+
+                              {/* Nested Piece 3: Sleeve (Cut 2) */}
+                              <g transform="translate(360, 85)">
+                                <polygon points="75,0 150,60 125,280 25,280 0,60" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="75" y="140" fill="#881337" fontSize="12" fontWeight="bold" textAnchor="middle">Sleeve</text>
+                                <text x="75" y="160" fill="#881337" fontSize="10" textAnchor="middle">(Cut 2)</text>
+                              </g>
+
+                              {/* Right Nested Pieces Column */}
+                              <g transform="translate(535, 85)">
+                                {/* Yoke */}
+                                <rect x="0" y="0" width="160" height="55" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="80" y="32" fill="#881337" fontSize="11" fontWeight="bold" textAnchor="middle">Yoke</text>
+
+                                {/* Collar */}
+                                <rect x="0" y="68" width="160" height="35" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="80" y="90" fill="#881337" fontSize="11" fontWeight="bold" textAnchor="middle">Collar</text>
+
+                                {/* Collar Stand */}
+                                <rect x="0" y="115" width="160" height="30" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="80" y="135" fill="#881337" fontSize="10" fontWeight="bold" textAnchor="middle">Collar Stand</text>
+
+                                {/* Pocket */}
+                                <rect x="25" y="160" width="110" height="110" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="80" y="220" fill="#881337" fontSize="11" fontWeight="bold" textAnchor="middle">Pocket</text>
+                              </g>
+
+                              {/* Bottom nested pieces */}
+                              {/* Cuff (Cut 2) */}
+                              <g transform="translate(60, 390)">
+                                <rect width="180" height="60" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="90" y="35" fill="#881337" fontSize="11" fontWeight="bold" textAnchor="middle">Cuff (Cut 2)</text>
+                              </g>
+
+                              {/* Placket (Cut 1) */}
+                              <g transform="translate(260, 390)">
+                                <rect width="250" height="60" rx="3" fill="#fda4af" fillOpacity="0.85" stroke="#e11d48" strokeWidth="1.5" />
+                                <text x="125" y="35" fill="#881337" fontSize="11" fontWeight="bold" textAnchor="middle">Placket (Cut 1)</text>
+                              </g>
+                            </svg>
+                          ) : (
+                            /* PATTERN PIECES VIEW WITH EXACT IMAGE 1 MEASUREMENT CALLOUTS */
+                            <svg
+                              viewBox={isShirt ? "-40 -40 1440 880" : "-30 -30 920 620"}
+                              className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
+                            >
+                              <defs>
+                                <pattern id="grid-pattern-step1" width="30" height="30" patternUnits="userSpaceOnUse">
+                                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                                </pattern>
+                                <marker id="arrow-dim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+                                </marker>
+                              </defs>
+                              <rect x={isShirt ? "-40" : "-30"} y={isShirt ? "-40" : "-30"} width={isShirt ? "1440" : "920"} height={isShirt ? "880" : "620"} fill="url(#grid-pattern-step1)" />
+
+                              {/* Render All Components in Live Preview */}
+                              {previewGarment.components.map((comp) => {
+                                // Build SVG path string from component commands
+                                let d = '';
+                                comp.paths.forEach((cmd) => {
+                                  if (cmd.type === 'M' && cmd.points[0]) {
+                                    d += `M ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                  } else if (cmd.type === 'L' && cmd.points[0]) {
+                                    d += `L ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                  } else if (cmd.type === 'C' && cmd.points.length >= 3) {
+                                    d += `C ${cmd.points[0].x} ${cmd.points[0].y}, ${cmd.points[1].x} ${cmd.points[1].y}, ${cmd.points[2].x} ${cmd.points[2].y} `;
+                                  } else if (cmd.type === 'Z') {
+                                    d += 'Z ';
+                                  }
+                                });
+
+                                return (
+                                  <g
+                                    key={comp.id}
+                                    transform={`translate(${comp.offset.x + 30}, ${comp.offset.y + 40})`}
+                                    className="transition-all duration-300"
                                   >
-                                    {comp.grainline.label}
-                                  </text>
+                                    {/* Pattern Piece Shaded Body (Matches Image 1 Pink Fill) */}
+                                    <path
+                                      d={d}
+                                      fill={isShirt ? '#ffe4e6' : newFabricColor}
+                                      fillOpacity={isShirt ? 0.88 : 0.18}
+                                      stroke={isShirt ? '#e11d48' : newFabricColor}
+                                      strokeWidth="2.5"
+                                      strokeLinejoin="round"
+                                      strokeLinecap="round"
+                                    />
 
-                                  {/* Piece Title Tag */}
-                                  <text
-                                    x={comp.labels[0]?.position.x || 60}
-                                    y={comp.labels[0]?.position.y || 80}
-                                    fill="#f8fafc"
-                                    fontSize="12"
-                                    fontWeight="bold"
-                                    letterSpacing="0.05em"
-                                  >
-                                    {comp.name}
-                                  </text>
-                                  <text
-                                    x={comp.labels[0]?.position.x || 60}
-                                    y={(comp.labels[0]?.position.y || 80) + 16}
-                                    fill="#94a3b8"
-                                    fontSize="10"
-                                  >
-                                    {comp.cutInstruction} • Size {currentSize}
-                                  </text>
+                                    {/* Seam Allowance Offset Line */}
+                                    <path
+                                      d={d}
+                                      fill="none"
+                                      stroke="#38bdf8"
+                                      strokeWidth="1.2"
+                                      strokeDasharray="4 3"
+                                      opacity="0.85"
+                                      transform={`scale(1.02)`}
+                                    />
 
-                                  {/* Landmark Point Dots */}
-                                  {comp.paths.flatMap((p) => p.points).filter((pt) => !pt.isControl && pt.name).map((pt, pIdx) => (
-                                    <g key={pIdx} transform={`translate(${pt.x}, ${pt.y})`}>
-                                      <circle r="3.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
-                                      <text x="6" y="3" fill="#cbd5e1" fontSize="9" fontWeight="600">
-                                        {pt.name}
-                                      </text>
-                                    </g>
-                                  ))}
+                                    {/* Grainline Arrow */}
+                                    <line
+                                      x1={comp.grainline.start.x}
+                                      y1={comp.grainline.start.y}
+                                      x2={comp.grainline.end.x}
+                                      y2={comp.grainline.end.y}
+                                      stroke="#10b981"
+                                      strokeWidth="2"
+                                    />
+                                    <text
+                                      x={comp.grainline.start.x + 8}
+                                      y={(comp.grainline.start.y + comp.grainline.end.y) / 2}
+                                      fill="#10b981"
+                                      fontSize="10"
+                                      fontWeight="bold"
+                                      transform={`rotate(90, ${comp.grainline.start.x + 8}, ${(comp.grainline.start.y + comp.grainline.end.y) / 2})`}
+                                    >
+                                      {comp.grainline.label}
+                                    </text>
+
+                                    {/* Piece Title Tag */}
+                                    <text
+                                      x={comp.labels[0]?.position.x || 60}
+                                      y={comp.labels[0]?.position.y || 80}
+                                      fill={isShirt ? '#881337' : '#f8fafc'}
+                                      fontSize="13"
+                                      fontWeight="bold"
+                                      letterSpacing="0.05em"
+                                    >
+                                      {comp.name}
+                                    </text>
+                                    <text
+                                      x={comp.labels[0]?.position.x || 60}
+                                      y={(comp.labels[0]?.position.y || 80) + 16}
+                                      fill={isShirt ? '#9f1239' : '#94a3b8'}
+                                      fontSize="10"
+                                      fontWeight="600"
+                                    >
+                                      {comp.cutInstruction} • Size {currentSize}
+                                    </text>
+
+                                    {/* Internals (Pocket, Fold Lines) */}
+                                    {comp.internals?.map((internal) => {
+                                      const internalPath = internal.points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + (internal.closed ? ' Z' : '');
+                                      return (
+                                        <path
+                                          key={internal.id}
+                                          d={internalPath}
+                                          fill={internal.type === 'pocket' ? 'rgba(59, 130, 246, 0.08)' : 'none'}
+                                          stroke={internal.color || '#3b82f6'}
+                                          strokeWidth="1.5"
+                                          strokeDasharray={internal.type === 'line' ? '4 2' : 'none'}
+                                        />
+                                      );
+                                    })}
+
+                                    {/* Landmark Point Dots */}
+                                    {comp.paths.flatMap((p) => p.points).filter((pt) => !pt.isControl && pt.name).map((pt, pIdx) => (
+                                      <g key={pIdx} transform={`translate(${pt.x}, ${pt.y})`}>
+                                        <circle r="3.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
+                                        <text x="6" y="3" fill={isShirt ? '#1e293b' : '#cbd5e1'} fontSize="9" fontWeight="600">
+                                          {pt.name}
+                                        </text>
+                                      </g>
+                                    ))}
+                                  </g>
+                                );
+                              })}
+
+                              {/* EXACT IMAGE 1 TECHNICAL DIMENSION CALLOUT ANNOTATIONS */}
+                              {isShirt && (
+                                <g id="image1-dimension-callouts" stroke="#0284c7" strokeWidth="1.5" fill="#0284c7">
+                                  {/* 1. FRONT PIECE CALLOUTS (offset: 30, 40) */}
+                                  {/* Width: 25cm */}
+                                  <line x1="30" y1="815" x2="280" y2="815" />
+                                  <text x="155" y="830" fontSize="12" fontWeight="bold" textAnchor="middle">25</text>
+                                  {/* Scye Depth: 26cm */}
+                                  <line x1="15" y1="40" x2="15" y2="300" />
+                                  <text x="8" y="175" fontSize="12" fontWeight="bold" textAnchor="middle">26</text>
+                                  {/* Body Length: 50cm */}
+                                  <line x1="15" y1="300" x2="15" y2="800" />
+                                  <text x="8" y="555" fontSize="12" fontWeight="bold" textAnchor="middle">50</text>
+                                  {/* Total Length: 76cm */}
+                                  <line x1="295" y1="40" x2="295" y2="800" stroke="#0369a1" />
+                                  <text x="305" y="420" fontSize="13" fontWeight="bold" fill="#0369a1">76</text>
+                                  {/* Shoulder: 11.5cm */}
+                                  <line x1="100" y1="20" x2="215" y2="20" />
+                                  <text x="157" y="15" fontSize="11" fontWeight="bold" textAnchor="middle">11.5</text>
+                                  {/* Neck Width: 7cm */}
+                                  <line x1="30" y1="20" x2="100" y2="20" />
+                                  <text x="65" y="15" fontSize="11" fontWeight="bold" textAnchor="middle">7</text>
+                                  {/* Shoulder Drop: 2.5cm */}
+                                  <text x="230" y="45" fontSize="10" fontWeight="bold">↕ 2.5</text>
+                                  {/* Pocket Placement: 13 x 14 */}
+                                  <text x="155" y="355" fontSize="10" fontWeight="bold" fill="#2563eb" textAnchor="middle">13</text>
+                                  <text x="230" y="420" fontSize="10" fontWeight="bold" fill="#2563eb">14</text>
+
+                                  {/* 2. BACK PIECE CALLOUTS (offset: 330, 40) */}
+                                  {/* Width: 25cm */}
+                                  <line x1="330" y1="815" x2="580" y2="815" />
+                                  <text x="455" y="830" fontSize="12" fontWeight="bold" textAnchor="middle">25</text>
+                                  {/* Top Shoulder Width: 21cm */}
+                                  <line x1="330" y1="20" x2="540" y2="20" />
+                                  <text x="435" y="15" fontSize="11" fontWeight="bold" textAnchor="middle">21</text>
+                                  {/* Shoulder Drop: 2.5cm */}
+                                  <text x="555" y="45" fontSize="10" fontWeight="bold">↕ 2.5</text>
+                                  {/* Armhole Depth: 26cm */}
+                                  <line x1="315" y1="40" x2="315" y2="300" />
+                                  <text x="323" y="175" fontSize="11" fontWeight="bold">26</text>
+                                  {/* Total Height: 76cm */}
+                                  <line x1="595" y1="40" x2="595" y2="800" stroke="#0369a1" />
+                                  <text x="605" y="420" fontSize="13" fontWeight="bold" fill="#0369a1">76</text>
+
+                                  {/* 3. SLEEVE PIECE CALLOUTS (offset: 630, 40) */}
+                                  {/* Bicep Width: 36cm */}
+                                  <line x1="630" y1="25" x2="990" y2="25" />
+                                  <text x="810" y="20" fontSize="12" fontWeight="bold" textAnchor="middle">36</text>
+                                  {/* Cap Height: 15cm */}
+                                  <line x1="1005" y1="40" x2="1005" y2="190" />
+                                  <text x="1015" y="120" fontSize="11" fontWeight="bold">15</text>
+                                  {/* Sleeve Length: 60cm */}
+                                  <line x1="615" y1="40" x2="615" y2="640" stroke="#0369a1" />
+                                  <text x="605" y="340" fontSize="13" fontWeight="bold" fill="#0369a1">60</text>
+                                  {/* Cuff Opening: 22cm */}
+                                  <line x1="700" y1="655" x2="920" y2="655" />
+                                  <text x="810" y="670" fontSize="12" fontWeight="bold" textAnchor="middle">22</text>
+
+                                  {/* 4. COLLAR (offset: 1030, 40) */}
+                                  <line x1="1030" y1="25" x2="1470" y2="25" />
+                                  <text x="1250" y="20" fontSize="12" fontWeight="bold" textAnchor="middle">44</text>
+                                  <text x="1480" y="62" fontSize="11" fontWeight="bold">4.5</text>
+
+                                  {/* 5. COLLAR STAND (offset: 1030, 110) */}
+                                  <text x="1250" y="105" fontSize="12" fontWeight="bold" textAnchor="middle">44</text>
+                                  <text x="1480" y="130" fontSize="11" fontWeight="bold">3</text>
+
+                                  {/* 6. POCKET (offset: 1030, 170) */}
+                                  <text x="1095" y="165" fontSize="11" fontWeight="bold" textAnchor="middle">13</text>
+                                  <text x="1175" y="240" fontSize="11" fontWeight="bold">14</text>
+
+                                  {/* 7. YOKE PIECES */}
+                                  {/* Back Yoke: 44 x 8 */}
+                                  <text x="850" y="695" fontSize="12" fontWeight="bold" textAnchor="middle">44</text>
+                                  <text x="615" y="725" fontSize="11" fontWeight="bold">8</text>
+                                  {/* Front Yoke: 22 x 8 */}
+                                  <text x="1140" y="345" fontSize="11" fontWeight="bold" textAnchor="middle">22</text>
+                                  <text x="1015" y="390" fontSize="11" fontWeight="bold">8</text>
+
+                                  {/* 8. CUFF: 22 x 11 */}
+                                  <text x="1140" y="455" fontSize="11" fontWeight="bold" textAnchor="middle">22</text>
+                                  <text x="1015" y="515" fontSize="11" fontWeight="bold">11</text>
+
+                                  {/* 9. PLACKET: 4 x 76 */}
+                                  <text x="1310" y="25" fontSize="11" fontWeight="bold" textAnchor="middle">4</text>
+                                  <text x="1340" y="420" fontSize="12" fontWeight="bold">76</text>
                                 </g>
-                              );
-                            })}
-                          </svg>
+                              )}
+                            </svg>
+                          )}
                         </div>
 
                         {/* Bottom Launch Actions (Create Product from Start to Finish) */}
@@ -4003,6 +4940,13 @@ export const EasyPatternStudio: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* E. Men's Shirt Master Technical Specification Modal (Image 1 Exact Match) */}
+      <MensShirtMasterModal
+        isOpen={isShirtMasterModalOpen}
+        onClose={() => setIsShirtMasterModalOpen(false)}
+        onApplyPreset={loadMensShirtImage1Spec}
+      />
 
       {/* ============================================================== */}
       {/* 4. FOOTER BANNER: Infographic Summary & Why Both Bridge        */}

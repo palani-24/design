@@ -340,8 +340,8 @@ export const useCADStore = create<CADState>((set, get) => ({
   toggleNotches: () => set((state) => ({ showNotches: !state.showNotches })),
   togglePointLabels: () => set((state) => ({ showPointLabels: !state.showPointLabels })),
 
-  // CLO 3D Standalone Studio Initial State
-  cadEngineMode: 'tukacad',
+  // EasyPattern Studio Default Landing Mode
+  cadEngineMode: 'easypattern',
   cloViewMode: 'split',
   language: 'en',
 
