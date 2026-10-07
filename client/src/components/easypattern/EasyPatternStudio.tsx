@@ -58,6 +58,8 @@ import {
   Eye,
   Play,
   Plus,
+  ZoomIn,
+  ZoomOut,
   Upload,
   Grid,
   FileText,
@@ -192,6 +194,132 @@ export const EasyPatternStudio: React.FC = () => {
   const [isShirtMasterModalOpen, setIsShirtMasterModalOpen] = useState(false);
   const [isTrouserMasterModalOpen, setIsTrouserMasterModalOpen] = useState(false);
   const [previewViewMode, setPreviewViewMode] = useState<'pieces' | 'marker'>('pieces');
+  const [previewZoom, setPreviewZoom] = useState(1.0);
+  const [previewPan, setPreviewPan] = useState({ x: 0, y: 0 });
+  const [isPanningPreview, setIsPanningPreview] = useState(false);
+  const [panStartCoords, setPanStartCoords] = useState({ x: 0, y: 0 });
+  const [previewLabelMode, setPreviewLabelMode] = useState<'clean' | 'all' | 'hover' | 'none'>('clean');
+  const [hoveredLandmark, setHoveredLandmark] = useState<{ name: string; x: number; y: number; pieceName: string } | null>(null);
+  const [selectedPreviewPieceId, setSelectedPreviewPieceId] = useState<string | null>(null);
+
+  // Advanced Bespoke Fit & Shaping Fine-Tuning State
+  const [bespokeFitTab, setBespokeFitTab] = useState<'contour' | 'ease' | 'sleeve'>('contour');
+  const [bespokeFit, setBespokeFit] = useState({
+    easeBust: 0,        // +/- cm
+    easeWaist: 0,       // +/- cm
+    easeHip: 0,         // +/- cm
+    neckDrop: 0,        // +/- cm
+    neckWidth: 0,       // +/- cm
+    shoulderSlope: 0,   // +/- deg
+    armholeDepth: 0,    // +/- cm
+    bustDartWidth: 0,   // +/- cm
+    waistSuppression: 0,// +/- cm
+    sleeveBicep: 0,     // +/- cm
+    hemCurve: 0,        // +/- cm
+    sideSlit: 0,        // +/- cm
+  });
+
+  const resetBespokeFit = () => {
+    setBespokeFit({
+      easeBust: 0,
+      easeWaist: 0,
+      easeHip: 0,
+      neckDrop: 0,
+      neckWidth: 0,
+      shoulderSlope: 0,
+      armholeDepth: 0,
+      bustDartWidth: 0,
+      waistSuppression: 0,
+      sleeveBicep: 0,
+      hemCurve: 0,
+      sideSlit: 0,
+    });
+    showToast('Reset bespoke fine-tuning adjustments.');
+  };
+
+  const handlePreviewMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsPanningPreview(true);
+      setPanStartCoords({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handlePreviewMouseMove = (e: React.MouseEvent) => {
+    if (isPanningPreview) {
+      const dx = e.clientX - panStartCoords.x;
+      const dy = e.clientY - panStartCoords.y;
+      setPreviewPan((prev) => ({
+        x: prev.x + dx * 1.5,
+        y: prev.y + dy * 1.5,
+      }));
+      setPanStartCoords({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handlePreviewMouseUp = () => {
+    setIsPanningPreview(false);
+  };
+
+  const resetPreviewTransform = () => {
+    setPreviewZoom(1.0);
+    setPreviewPan({ x: 0, y: 0 });
+    setSelectedPreviewPieceId(null);
+    showToast('Reset pattern view to fit center.');
+  };
+
+  const isMajorLandmark = (name?: string) => {
+    if (!name) return false;
+    const n = name.toLowerCase();
+    return (
+      n.includes('hps') ||
+      n.includes('shoulder tip') ||
+      n.includes('underarm') ||
+      n.includes('apex') ||
+      n.includes('hem') ||
+      n.includes('crotch') ||
+      n.includes('knee') ||
+      n.includes('crown') ||
+      n.includes('center front') ||
+      n.includes('center back')
+    );
+  };
+
+  const getPreviewBoundingBox = (previewGarmentObj: Garment) => {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    previewGarmentObj.components.forEach((comp) => {
+      comp.paths.forEach((cmd) => {
+        cmd.points.forEach((pt) => {
+          const absX = comp.offset.x + 30 + pt.x;
+          const absY = comp.offset.y + 40 + pt.y;
+          if (absX < minX) minX = absX;
+          if (absX > maxX) maxX = absX;
+          if (absY < minY) minY = absY;
+          if (absY > maxY) maxY = absY;
+        });
+      });
+    });
+
+    if (!isFinite(minX) || !isFinite(maxX) || maxX <= minX || maxY <= minY) {
+      return { minX: -60, minY: -50, width: 1400, height: 860 };
+    }
+
+    // Generous breathing room margin on every side so pieces and labels never clip!
+    const padX = 100;
+    const padY = 80;
+    const calculatedWidth = (maxX - minX) + padX * 2;
+    const calculatedHeight = (maxY - minY) + padY * 2;
+
+    return {
+      minX: minX - padX,
+      minY: minY - padY,
+      width: Math.max(calculatedWidth, 1250),
+      height: Math.max(calculatedHeight, 740),
+    };
+  };
 
   const loadMensShirtImage1Spec = () => {
     setNewProductName("Men's Shirt – Basic Pattern");
@@ -375,19 +503,22 @@ export const EasyPatternStudio: React.FC = () => {
   const generateCustomGarmentProduct = (): Garment => {
     // 👔 MEN'S SHIRT MASTER PATTERN (IMAGE 1 SPECIFICATION)
     if (newProductArchetype === 'shirt' || newProductName.toLowerCase().includes('shirt')) {
-      const chestEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
+      const baseChestEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
+      const chestEase = baseChestEase + bespokeFit.easeBust;
       const totalChest = newMeasurements.bustChest + chestEase;
       const frontWidth = Math.round((totalChest / 4) * 10); // 250mm
       const backWidth = frontWidth;
       const backLen = Math.round(newMeasurements.backLength * 10); // 760mm
-      const scyeDepth = Math.round(newMeasurements.armholeDepth * 10); // 260mm
+      const scyeDepth = Math.round((newMeasurements.armholeDepth + bespokeFit.armholeDepth) * 10); // 260mm
       const slvLen = Math.round(newMeasurements.sleeveLength * 10); // 600mm
-      const cuffWidth = Math.round(newMeasurements.cuffWidth * 20); // 220mm
-      const collarWidth = Math.round((newMeasurements.neckGirth + 4) * 10); // 440mm
+      const cuffWidth = Math.round((newMeasurements.cuffWidth + bespokeFit.sleeveBicep * 0.5) * 20); // 220mm
+      const collarWidth = Math.round((newMeasurements.neckGirth + 4 + bespokeFit.neckWidth) * 10); // 440mm
       const collarHt = Math.round(newMeasurements.collarWidth * 10); // 45mm
-      const yokeWidth = Math.round(newMeasurements.shoulderWidth * 10); // 440mm
+      const yokeWidth = Math.round((newMeasurements.shoulderWidth + bespokeFit.neckWidth) * 10); // 440mm
       const fYokeWidth = Math.round(yokeWidth / 2); // 220mm
       const sa = Math.round(newSeamAllowance * 10);
+      const frontNeckDrop = 70 + (bespokeFit.neckDrop * 6);
+      const shoulderSlopeOffset = bespokeFit.shoulderSlope * 2;
 
       const shirtComponents: PatternComponent[] = [
         // 1. FRONT (CUT 2)
@@ -405,18 +536,18 @@ export const EasyPatternStudio: React.FC = () => {
             label: 'GRAINLINE ↕ CF',
           },
           paths: [
-            { type: 'M', zone: 'center-fold', points: [{ x: 0, y: 70, name: 'Center Front Neck' }] },
+            { type: 'M', zone: 'center-fold', points: [{ x: 0, y: frontNeckDrop, name: 'Center Front Neck' }] },
             {
               type: 'C',
               zone: 'neck',
               points: [
-                { x: 20, y: 70, isControl: true },
+                { x: 20, y: frontNeckDrop, isControl: true },
                 { x: 55, y: 30, isControl: true },
-                { x: 70, y: 0, name: 'HPS Neck Point' },
+                { x: 70 + (bespokeFit.neckWidth * 2), y: 0, name: 'HPS Neck Point' },
               ],
               annotation: 'Neck Curve (7cm drop, 11.5cm width)',
             },
-            { type: 'L', zone: 'shoulder', points: [{ x: 185, y: 25, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam (11.5cm)' },
+            { type: 'L', zone: 'shoulder', points: [{ x: 185, y: 25 + shoulderSlopeOffset, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam (11.5cm)' },
             {
               type: 'C',
               zone: 'armhole',
@@ -766,14 +897,14 @@ export const EasyPatternStudio: React.FC = () => {
     // 👖 MEN'S TAILORED TROUSER / PANT MASTER PATTERN (9 PRODUCTION CAD PIECES)
     if (newProductArchetype === 'trouser' || newProductName.toLowerCase().includes('trouser') || newProductName.toLowerCase().includes('pant')) {
       const sa = Math.round(newSeamAllowance * 10);
-      const fWaist = Math.round((pantMeasurements.waist / 4) * 10); // 210mm
-      const bWaist = Math.round(((pantMeasurements.waist + 4) / 4) * 10); // 220mm
-      const fHip = Math.round((pantMeasurements.hip / 4) * 10); // 250mm
-      const bHip = Math.round(((pantMeasurements.hip + 4) / 4) * 10); // 260mm
+      const fWaist = Math.round(((pantMeasurements.waist + bespokeFit.easeWaist) / 4) * 10); // 210mm
+      const bWaist = Math.round(((pantMeasurements.waist + bespokeFit.easeWaist + 4) / 4) * 10); // 220mm
+      const fHip = Math.round(((pantMeasurements.hip + bespokeFit.easeHip) / 4) * 10); // 250mm
+      const bHip = Math.round(((pantMeasurements.hip + bespokeFit.easeHip + 4) / 4) * 10); // 260mm
       const totalLen = Math.round(pantMeasurements.outseam * 10); // 1040mm
       const kneePos = Math.round(totalLen * 0.52);
-      const kneeW = Math.round((pantMeasurements.knee / 2) * 10);
-      const hemW = Math.round(pantMeasurements.hemWidth * 10);
+      const kneeW = Math.round(((pantMeasurements.knee + bespokeFit.sleeveBicep) / 2) * 10);
+      const hemW = Math.round((pantMeasurements.hemWidth + bespokeFit.hemCurve) * 10);
       const fRise = Math.round(pantMeasurements.frontRise * 10);
       const bRise = Math.round(pantMeasurements.backRise * 10);
 
@@ -1156,8 +1287,8 @@ export const EasyPatternStudio: React.FC = () => {
       };
     }
 
-    const bustEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14;
-    const waistEase = newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 3 : newSilhouetteFit === 'relaxed' ? 6 : 10;
+    const bustEase = (newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 4 : newSilhouetteFit === 'relaxed' ? 8 : 14) + bespokeFit.easeBust;
+    const waistEase = (newSilhouetteFit === 'slim' ? 0 : newSilhouetteFit === 'regular' ? 3 : newSilhouetteFit === 'relaxed' ? 6 : 10) + bespokeFit.easeWaist;
 
     const wChest = Math.round(((newMeasurements.bustChest + bustEase) / 4) * 10);
     const wWaist = Math.round(((newMeasurements.waist + waistEase) / 4) * 10);
@@ -1171,13 +1302,18 @@ export const EasyPatternStudio: React.FC = () => {
     else if (newHemLength === 'knee') totalLen = 980;
     else if (newHemLength === 'maxi') totalLen = 1320;
 
-    let neckY = 95;
-    if (newNecklineStyle === 'crew') neckY = 90;
-    else if (newNecklineStyle === 'v-neck') neckY = 150;
-    else if (newNecklineStyle === 'scoop') neckY = 165;
-    else if (newNecklineStyle === 'boat') neckY = 50;
-    else if (newNecklineStyle === 'mandarin') neckY = 65;
-    else if (newNecklineStyle === 'shirt-collar') neckY = 80;
+    let neckY = 95 + (bespokeFit.neckDrop * 8);
+    if (newNecklineStyle === 'crew') neckY = 90 + (bespokeFit.neckDrop * 8);
+    else if (newNecklineStyle === 'v-neck') neckY = 150 + (bespokeFit.neckDrop * 8);
+    else if (newNecklineStyle === 'scoop') neckY = 165 + (bespokeFit.neckDrop * 8);
+    else if (newNecklineStyle === 'boat') neckY = 50 + (bespokeFit.neckDrop * 8);
+    else if (newNecklineStyle === 'mandarin') neckY = 65 + (bespokeFit.neckDrop * 8);
+    else if (newNecklineStyle === 'shirt-collar') neckY = 80 + (bespokeFit.neckDrop * 8);
+
+    const shoulderSlopeDelta = bespokeFit.shoulderSlope * 3;
+    const armholeScyeDelta = bespokeFit.armholeDepth * 10;
+    const bustDartSuppression = bespokeFit.bustDartWidth * 4;
+    const waistDartSuppression = bespokeFit.waistSuppression * 4;
 
     const components: PatternComponent[] = [];
 
@@ -1185,25 +1321,25 @@ export const EasyPatternStudio: React.FC = () => {
     const frontPaths: PatternPathCommand[] = [
       { type: 'M', zone: 'neck', points: [{ x: 0, y: neckY, name: 'Center Front Neck' }] },
       newNecklineStyle === 'v-neck'
-        ? { type: 'L', zone: 'neck', points: [{ x: 88, y: 40, name: 'HPS Neck Point' }] }
+        ? { type: 'L', zone: 'neck', points: [{ x: 88 + (bespokeFit.neckWidth * 3), y: 40, name: 'HPS Neck Point' }] }
         : {
             type: 'C',
             zone: 'neck',
             points: [
               { x: 30, y: neckY, isControl: true },
               { x: 75, y: 55, isControl: true },
-              { x: 88, y: 40, name: 'HPS Neck Point' },
+              { x: 88 + (bespokeFit.neckWidth * 3), y: 40, name: 'HPS Neck Point' },
             ],
             annotation: 'Front Neckline',
           },
-      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 78, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam' },
+      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 78 + shoulderSlopeDelta, name: 'Front Shoulder Tip' }], annotation: 'Shoulder Seam' },
       {
         type: 'C',
         zone: 'armhole',
         points: [
           { x: Math.round(wShoulder * 0.9), y: 145, isControl: true },
           { x: Math.round(wChest * 0.92), y: 205, isControl: true },
-          { x: wChest, y: 228, name: 'Underarm Point' },
+          { x: wChest, y: 228 + armholeScyeDelta, name: 'Underarm Point' },
         ],
         annotation: 'Armhole Curve',
       },
@@ -1211,13 +1347,13 @@ export const EasyPatternStudio: React.FC = () => {
 
     if (newDartStyle === 'waist-bust') {
       frontPaths.push(
-        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.98), y: 265, name: 'Side Bust Dart Top' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.98), y: 265 - bustDartSuppression, name: 'Side Bust Dart Top' }] },
         { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.62), y: 285, name: 'Bust Apex Point' }] },
-        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.97), y: 305, name: 'Side Bust Dart Bottom' }] },
+        { type: 'L', zone: 'bust', points: [{ x: Math.round(wChest * 0.97), y: 305 + bustDartSuppression, name: 'Side Bust Dart Bottom' }] },
         { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Front Side Waist' }], annotation: 'Side Seam' },
-        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.75), y: totalLen, name: 'Waist Dart Leg 2' }] },
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.75 + waistDartSuppression), y: totalLen, name: 'Waist Dart Leg 2' }] },
         { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.65), y: 310, name: 'Waist Dart Apex' }] },
-        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.55), y: totalLen, name: 'Waist Dart Leg 1' }] }
+        { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.55 - waistDartSuppression), y: totalLen, name: 'Waist Dart Leg 1' }] }
       );
     } else if (newDartStyle === 'french') {
       frontPaths.push(
@@ -1237,9 +1373,9 @@ export const EasyPatternStudio: React.FC = () => {
         type: 'C',
         zone: 'hem',
         points: [
-          { x: Math.round(wWaist * 0.7), y: totalLen + 15, isControl: true },
-          { x: Math.round(wWaist * 0.3), y: totalLen + 30, isControl: true },
-          { x: 0, y: totalLen + 25, name: 'Center Front Hem' },
+          { x: Math.round(wWaist * 0.7), y: totalLen + 15 + (bespokeFit.hemCurve * 3), isControl: true },
+          { x: Math.round(wWaist * 0.3), y: totalLen + 30 + (bespokeFit.hemCurve * 3), isControl: true },
+          { x: 0, y: totalLen + 25 + (bespokeFit.hemCurve * 3), name: 'Center Front Hem' },
         ],
         annotation: 'Curved Shirttail Hem',
       });
@@ -1284,27 +1420,27 @@ export const EasyPatternStudio: React.FC = () => {
         points: [
           { x: 30, y: 45, isControl: true },
           { x: 72, y: 42, isControl: true },
-          { x: 88, y: 40, name: 'Back HPS Neck Point' },
+          { x: 88 + (bespokeFit.neckWidth * 3), y: 40, name: 'Back HPS Neck Point' },
         ],
         annotation: 'Back Neckline',
       },
       { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.55), y: 56, name: 'Back Shoulder Dart 1' }] },
       { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.52), y: 130, name: 'Back Shoulder Dart Apex' }] },
       { type: 'L', zone: 'shoulder', points: [{ x: Math.round(wShoulder * 0.62), y: 59, name: 'Back Shoulder Dart 2' }] },
-      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 74, name: 'Back Shoulder Tip' }] },
+      { type: 'L', zone: 'shoulder', points: [{ x: wShoulder, y: 74 + shoulderSlopeDelta, name: 'Back Shoulder Tip' }] },
       {
         type: 'C',
         zone: 'armhole',
         points: [
           { x: Math.round(wShoulder * 0.92), y: 145, isControl: true },
           { x: Math.round(wChest * 0.92), y: 205, isControl: true },
-          { x: wChest, y: 228, name: 'Back Underarm Point' },
+          { x: wChest, y: 228 + armholeScyeDelta, name: 'Back Underarm Point' },
         ],
       },
       { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist + 15), y: totalLen, name: 'Back Side Waist' }] },
-      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.72), y: totalLen, name: 'Back Waist Dart Leg 2' }] },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.72 + waistDartSuppression), y: totalLen, name: 'Back Waist Dart Leg 2' }] },
       { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.62), y: 260, name: 'Back Waist Dart Apex' }] },
-      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.52), y: totalLen, name: 'Back Waist Dart Leg 1' }] },
+      { type: 'L', zone: 'waist', points: [{ x: Math.round(wWaist * 0.52 - waistDartSuppression), y: totalLen, name: 'Back Waist Dart Leg 1' }] },
       { type: 'L', zone: 'hem', points: [{ x: 0, y: totalLen, name: 'Center Back Waist' }] },
       { type: 'Z', zone: 'center-fold', points: [{ x: 0, y: 45 }] },
     ];
@@ -1341,7 +1477,7 @@ export const EasyPatternStudio: React.FC = () => {
       else if (newSleeveStyle === 'three-quarter') slvLen = 430;
       else if (newSleeveStyle === 'long' || newSleeveStyle === 'raglan') slvLen = 590;
 
-      const slvWidth = Math.round(wChest * 1.05);
+      const slvWidth = Math.round(wChest * 1.05) + (bespokeFit.sleeveBicep * 10);
       const slvCrown = 145;
 
       const sleevePaths: PatternPathCommand[] = [
@@ -3393,10 +3529,503 @@ export const EasyPatternStudio: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Section 4: Production & Seam Specs */}
+                    {/* Section 4: Bespoke Fit & Shaping Fine-Tuner (Live Real-Time Sliders) */}
+                    <div className="space-y-3 p-4 bg-gradient-to-br from-slate-50 to-indigo-50/40 rounded-2xl border border-indigo-200/70 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Sliders className="w-4 h-4 text-indigo-600" />
+                          <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                            4. Bespoke Fit & Shaping Fine-Tuner
+                          </label>
+                        </div>
+                        <button
+                          onClick={resetBespokeFit}
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-md transition-all flex items-center gap-1 cursor-pointer"
+                          title="Reset all fine-tuning adjustments to 0"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Reset
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Real-time live CAD vector reshaping. Move sliders to morph curves, dart suppression, neckline drops, and ease immediately.
+                      </p>
+
+                      {/* Category Tabs: Contour & Darts | Ease & Silhouettes | Sleeve & Hem */}
+                      <div className="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-xl text-xs font-bold">
+                        <button
+                          onClick={() => setBespokeFitTab('contour')}
+                          className={`py-1.5 rounded-lg text-[11px] transition-all cursor-pointer ${
+                            bespokeFitTab === 'contour'
+                              ? 'bg-white text-indigo-700 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Contour & Darts
+                        </button>
+                        <button
+                          onClick={() => setBespokeFitTab('ease')}
+                          className={`py-1.5 rounded-lg text-[11px] transition-all cursor-pointer ${
+                            bespokeFitTab === 'ease'
+                              ? 'bg-white text-indigo-700 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Ease & Fit
+                        </button>
+                        <button
+                          onClick={() => setBespokeFitTab('sleeve')}
+                          className={`py-1.5 rounded-lg text-[11px] transition-all cursor-pointer ${
+                            bespokeFitTab === 'sleeve'
+                              ? 'bg-white text-indigo-700 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Sleeve & Hem
+                        </button>
+                      </div>
+
+                      {/* Tab 1: Contour & Darts */}
+                      {bespokeFitTab === 'contour' && (
+                        <div className="space-y-2 text-xs">
+                          {/* 1. Neckline Drop Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Neck Drop / Depth:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.neckDrop > 0 ? `+${bespokeFit.neckDrop}` : bespokeFit.neckDrop} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-4"
+                                max="8"
+                                step="0.5"
+                                value={bespokeFit.neckDrop}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, neckDrop: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, neckDrop: Math.max(-4, +(f.neckDrop - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, neckDrop: Math.min(8, +(f.neckDrop + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. Neck Width Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Neck Width (HPS Lateral):</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.neckWidth > 0 ? `+${bespokeFit.neckWidth}` : bespokeFit.neckWidth} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-3"
+                                max="6"
+                                step="0.5"
+                                value={bespokeFit.neckWidth}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, neckWidth: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, neckWidth: Math.max(-3, +(f.neckWidth - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, neckWidth: Math.min(6, +(f.neckWidth + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Shoulder Slope Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Shoulder Slope Offset:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.shoulderSlope > 0 ? `+${bespokeFit.shoulderSlope}` : bespokeFit.shoulderSlope} deg
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-5"
+                                max="5"
+                                step="0.5"
+                                value={bespokeFit.shoulderSlope}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, shoulderSlope: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, shoulderSlope: Math.max(-5, +(f.shoulderSlope - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, shoulderSlope: Math.min(5, +(f.shoulderSlope + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 4. Armhole Scye Depth Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Armhole Scye Depth:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.armholeDepth > 0 ? `+${bespokeFit.armholeDepth}` : bespokeFit.armholeDepth} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-4"
+                                max="6"
+                                step="0.5"
+                                value={bespokeFit.armholeDepth}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, armholeDepth: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, armholeDepth: Math.max(-4, +(f.armholeDepth - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, armholeDepth: Math.min(6, +(f.armholeDepth + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 5. Bust Dart Intake Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Bust Dart Intake / Width:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.bustDartWidth > 0 ? `+${bespokeFit.bustDartWidth}` : bespokeFit.bustDartWidth} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-3"
+                                max="5"
+                                step="0.5"
+                                value={bespokeFit.bustDartWidth}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, bustDartWidth: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, bustDartWidth: Math.max(-3, +(f.bustDartWidth - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, bustDartWidth: Math.min(5, +(f.bustDartWidth + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 6. Waist Dart Suppression Slider */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Waist Dart Suppression:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.waistSuppression > 0 ? `+${bespokeFit.waistSuppression}` : bespokeFit.waistSuppression} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-3"
+                                max="6"
+                                step="0.5"
+                                value={bespokeFit.waistSuppression}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, waistSuppression: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, waistSuppression: Math.max(-3, +(f.waistSuppression - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, waistSuppression: Math.min(6, +(f.waistSuppression + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tab 2: Ease & Fit */}
+                      {bespokeFitTab === 'ease' && (
+                        <div className="space-y-2 text-xs">
+                          {/* 1. Bust / Chest Ease */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Bust / Chest Ease Allowance:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.easeBust > 0 ? `+${bespokeFit.easeBust}` : bespokeFit.easeBust} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-8"
+                                max="16"
+                                step="1"
+                                value={bespokeFit.easeBust}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, easeBust: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeBust: Math.max(-8, f.easeBust - 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeBust: Math.min(16, f.easeBust + 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. Waist Ease */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Waist Ease Allowance:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.easeWaist > 0 ? `+${bespokeFit.easeWaist}` : bespokeFit.easeWaist} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-8"
+                                max="16"
+                                step="1"
+                                value={bespokeFit.easeWaist}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, easeWaist: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeWaist: Math.max(-8, f.easeWaist - 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeWaist: Math.min(16, f.easeWaist + 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Hip Ease */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Hip / Seat Ease Allowance:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.easeHip > 0 ? `+${bespokeFit.easeHip}` : bespokeFit.easeHip} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-8"
+                                max="16"
+                                step="1"
+                                value={bespokeFit.easeHip}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, easeHip: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeHip: Math.max(-8, f.easeHip - 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, easeHip: Math.min(16, f.easeHip + 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tab 3: Sleeve & Hem */}
+                      {bespokeFitTab === 'sleeve' && (
+                        <div className="space-y-2 text-xs">
+                          {/* 1. Sleeve Bicep Girth */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Sleeve Bicep Girth / Knee:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.sleeveBicep > 0 ? `+${bespokeFit.sleeveBicep}` : bespokeFit.sleeveBicep} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-5"
+                                max="8"
+                                step="0.5"
+                                value={bespokeFit.sleeveBicep}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, sleeveBicep: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, sleeveBicep: Math.max(-5, +(f.sleeveBicep - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, sleeveBicep: Math.min(8, +(f.sleeveBicep + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. Hem Curvature */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Hem Curvature Depth:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.hemCurve > 0 ? `+${bespokeFit.hemCurve}` : bespokeFit.hemCurve} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="-4"
+                                max="10"
+                                step="0.5"
+                                value={bespokeFit.hemCurve}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, hemCurve: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, hemCurve: Math.max(-4, +(f.hemCurve - 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, hemCurve: Math.min(10, +(f.hemCurve + 0.5).toFixed(1)) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Side Slit Opening */}
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-slate-700 text-[11px]">Side Slit Opening:</span>
+                              <span className="font-mono font-bold text-indigo-600 text-xs">
+                                {bespokeFit.sideSlit > 0 ? `+${bespokeFit.sideSlit}` : bespokeFit.sideSlit} cm
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="0"
+                                max="25"
+                                step="1"
+                                value={bespokeFit.sideSlit}
+                                onChange={(e) => setBespokeFit((f) => ({ ...f, sideSlit: parseFloat(e.target.value) }))}
+                                className="flex-1 accent-indigo-600 cursor-pointer"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, sideSlit: Math.max(0, f.sideSlit - 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  -
+                                </button>
+                                <button
+                                  onClick={() => setBespokeFit((f) => ({ ...f, sideSlit: Math.min(25, f.sideSlit + 1) }))}
+                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 5: Production & Seam Specs */}
                     <div className="space-y-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                        4. Production CAD Specs & Fabric
+                        5. Production CAD Specs & Fabric
                       </label>
 
                       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -3458,7 +4087,7 @@ export const EasyPatternStudio: React.FC = () => {
                     return (
                       <div className="flex-1 h-full bg-[#0e1117] flex flex-col justify-between overflow-hidden relative">
                         {/* Preview Top Header HUD */}
-                        <div className="p-3 bg-[#141721] border-b border-zinc-800 flex items-center justify-between shrink-0 flex-wrap gap-2">
+                        <div className="p-3 bg-[#141721] border-b border-zinc-800 flex items-center justify-between shrink-0 flex-wrap gap-2.5">
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -3474,12 +4103,12 @@ export const EasyPatternStudio: React.FC = () => {
                             </p>
                           </div>
 
-                          {/* Mode Switcher: Pieces vs Cutting Marker vs Master Spec Sheet */}
-                          <div className="flex items-center gap-1.5">
+                          {/* Center Controls: View Switcher & Zoom Toolbar & Labels Toggle */}
+                          <div className="flex items-center gap-2 flex-wrap">
                             <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
                               <button
                                 onClick={() => setPreviewViewMode('pieces')}
-                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                                   previewViewMode === 'pieces'
                                     ? 'bg-blue-600 text-white shadow-xs'
                                     : 'text-zinc-400 hover:text-white'
@@ -3489,7 +4118,7 @@ export const EasyPatternStudio: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => setPreviewViewMode('marker')}
-                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                                   previewViewMode === 'marker'
                                     ? 'bg-blue-600 text-white shadow-xs'
                                     : 'text-zinc-400 hover:text-white'
@@ -3499,20 +4128,67 @@ export const EasyPatternStudio: React.FC = () => {
                               </button>
                             </div>
 
+                            {/* Zoom & Fit Controls */}
+                            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs">
+                              <button
+                                onClick={() => setPreviewZoom((z) => Math.max(0.4, +(z - 0.2).toFixed(1)))}
+                                className="w-6 h-6 rounded flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+                                title="Zoom Out"
+                              >
+                                <ZoomOut className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="font-mono text-[11px] font-bold text-zinc-200 px-1.5 min-w-[38px] text-center">
+                                {Math.round(previewZoom * 100)}%
+                              </span>
+                              <button
+                                onClick={() => setPreviewZoom((z) => Math.min(2.5, +(z + 0.2).toFixed(1)))}
+                                className="w-6 h-6 rounded flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer"
+                                title="Zoom In"
+                              >
+                                <ZoomIn className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={resetPreviewTransform}
+                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ml-0.5"
+                                title="Fit All Pattern Pieces (Center View)"
+                              >
+                                <Maximize2 className="w-3 h-3 text-cyan-400" />
+                                <span>Fit All</span>
+                              </button>
+                            </div>
+
+                            {/* Landmark Density Selector */}
+                            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-[10px]">
+                              <span className="text-zinc-500 font-bold px-1.5 uppercase text-[9px]">Labels:</span>
+                              {(['clean', 'hover', 'all', 'none'] as const).map((mode) => (
+                                <button
+                                  key={mode}
+                                  onClick={() => setPreviewLabelMode(mode)}
+                                  className={`px-2 py-0.5 rounded capitalize font-bold transition-all cursor-pointer ${
+                                    previewLabelMode === mode
+                                      ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-2xs'
+                                      : 'text-zinc-400 hover:text-white'
+                                  }`}
+                                >
+                                  {mode}
+                                </button>
+                              ))}
+                            </div>
+
                             {isTrouser ? (
                               <button
                                 onClick={() => setIsTrouserMasterModalOpen(true)}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-700 text-emerald-200 text-[11px] font-bold transition-all flex items-center gap-1"
+                                className="px-2.5 py-1 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-700 text-emerald-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                                 title="Open Full Men's Tailored Trouser Master Specification & Blueprint"
                               >
                                 <Layers className="w-3.5 h-3.5 text-emerald-300" />
-                                <span>Trouser Spec (9 CAD)</span>
+                                <span>Trouser Spec</span>
                                 <Maximize2 className="w-3 h-3" />
                               </button>
                             ) : (
                               <button
                                 onClick={() => setIsShirtMasterModalOpen(true)}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-indigo-200 text-[11px] font-bold transition-all flex items-center gap-1"
+                                className="px-2.5 py-1 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-indigo-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                                 title="Open Full Image 1 Technical Specification Sheet"
                               >
                                 <Shirt className="w-3.5 h-3.5 text-indigo-300" />
@@ -3526,10 +4202,10 @@ export const EasyPatternStudio: React.FC = () => {
                             {isTrouser ? (
                               <>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                                  Waist: {pantMeasurements.waist}cm
+                                  Waist: {pantMeasurements.waist + bespokeFit.easeWaist}cm
                                 </span>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                                  Hip: {pantMeasurements.hip}cm
+                                  Hip: {pantMeasurements.hip + bespokeFit.easeHip}cm
                                 </span>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
                                   Inseam: {pantMeasurements.inseam}cm
@@ -3541,10 +4217,10 @@ export const EasyPatternStudio: React.FC = () => {
                             ) : (
                               <>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                                  Chest: {newMeasurements.bustChest}cm
+                                  Chest: {newMeasurements.bustChest + bespokeFit.easeBust}cm
                                 </span>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
-                                  Waist: {newMeasurements.waist}cm
+                                  Waist: {newMeasurements.waist + bespokeFit.easeWaist}cm
                                 </span>
                                 <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700">
                                   Length: {newMeasurements.backLength}cm
@@ -3766,134 +4442,201 @@ export const EasyPatternStudio: React.FC = () => {
                                 </g>
                               </svg>
                             )
-                          ) : (
-                            /* PATTERN PIECES VIEW WITH TECHNICAL MEASUREMENT CALLOUTS */
-                            <svg
-                              viewBox={isShirt ? "-40 -40 1440 880" : isTrouser ? "-40 -40 1560 1150" : "-30 -30 920 620"}
-                              className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
-                            >
-                              <defs>
-                                <pattern id="grid-pattern-step1" width="30" height="30" patternUnits="userSpaceOnUse">
-                                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                                </pattern>
-                                <marker id="arrow-dim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
-                                </marker>
-                              </defs>
-                              <rect x={isShirt || isTrouser ? "-40" : "-30"} y={isShirt || isTrouser ? "-40" : "-30"} width={isShirt ? "1440" : isTrouser ? "1560" : "920"} height={isShirt ? "880" : isTrouser ? "1150" : "620"} fill="url(#grid-pattern-step1)" />
+                          ) : (() => {
+                            const bbox = getPreviewBoundingBox(previewGarment);
+                            const zoomWidth = bbox.width / previewZoom;
+                            const zoomHeight = bbox.height / previewZoom;
+                            const centerX = bbox.minX + bbox.width / 2;
+                            const centerY = bbox.minY + bbox.height / 2;
+                            const currentMinX = centerX - zoomWidth / 2 - previewPan.x;
+                            const currentMinY = centerY - zoomHeight / 2 - previewPan.y;
+                            const calculatedViewBox = `${currentMinX} ${currentMinY} ${zoomWidth} ${zoomHeight}`;
 
-                              {/* Render All Components in Live Preview */}
-                              {previewGarment.components.map((comp) => {
-                                // Build SVG path string from component commands
-                                let d = '';
-                                comp.paths.forEach((cmd) => {
-                                  if (cmd.type === 'M' && cmd.points[0]) {
-                                    d += `M ${cmd.points[0].x} ${cmd.points[0].y} `;
-                                  } else if (cmd.type === 'L' && cmd.points[0]) {
-                                    d += `L ${cmd.points[0].x} ${cmd.points[0].y} `;
-                                  } else if (cmd.type === 'C' && cmd.points.length >= 3) {
-                                    d += `C ${cmd.points[0].x} ${cmd.points[0].y}, ${cmd.points[1].x} ${cmd.points[1].y}, ${cmd.points[2].x} ${cmd.points[2].y} `;
-                                  } else if (cmd.type === 'Z') {
-                                    d += 'Z ';
-                                  }
-                                });
+                            return (
+                              /* PATTERN PIECES VIEW WITH DYNAMIC BOUNDING BOX & INTERACTIVE PAN/ZOOM */
+                              <svg
+                                viewBox={calculatedViewBox}
+                                className="w-full h-full max-h-[580px] drop-shadow-xl select-none"
+                                onMouseDown={handlePreviewMouseDown}
+                                onMouseMove={handlePreviewMouseMove}
+                                onMouseUp={handlePreviewMouseUp}
+                                onMouseLeave={handlePreviewMouseUp}
+                                style={{ cursor: isPanningPreview ? 'grabbing' : 'grab' }}
+                              >
+                                <defs>
+                                  <pattern id="grid-pattern-step1" width="30" height="30" patternUnits="userSpaceOnUse">
+                                    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                                  </pattern>
+                                  <marker id="arrow-dim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+                                  </marker>
+                                </defs>
+                                <rect
+                                  x={currentMinX - 1200}
+                                  y={currentMinY - 1200}
+                                  width={zoomWidth + 2400}
+                                  height={zoomHeight + 2400}
+                                  fill="url(#grid-pattern-step1)"
+                                />
 
-                                return (
-                                  <g
-                                    key={comp.id}
-                                    transform={`translate(${comp.offset.x + 30}, ${comp.offset.y + 40})`}
-                                    className="transition-all duration-300"
-                                  >
-                                    {/* Pattern Piece Shaded Body */}
-                                    <path
-                                      d={d}
-                                      fill={isShirt ? '#ffe4e6' : isTrouser ? '#f1f5f9' : newFabricColor}
-                                      fillOpacity={isShirt ? 0.88 : isTrouser ? 0.85 : 0.18}
-                                      stroke={isShirt ? '#e11d48' : isTrouser ? '#0f766e' : newFabricColor}
-                                      strokeWidth="2.5"
-                                      strokeLinejoin="round"
-                                      strokeLinecap="round"
-                                    />
+                                {/* Render All Components in Live Preview */}
+                                {previewGarment.components.map((comp) => {
+                                  const isPieceSelected = selectedPreviewPieceId === comp.id;
 
-                                    {/* Seam Allowance Offset Line */}
-                                    <path
-                                      d={d}
-                                      fill="none"
-                                      stroke="#38bdf8"
-                                      strokeWidth="1.2"
-                                      strokeDasharray="4 3"
-                                      opacity="0.85"
-                                      transform={`scale(1.02)`}
-                                    />
+                                  // Build SVG path string from component commands
+                                  let d = '';
+                                  comp.paths.forEach((cmd) => {
+                                    if (cmd.type === 'M' && cmd.points[0]) {
+                                      d += `M ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                    } else if (cmd.type === 'L' && cmd.points[0]) {
+                                      d += `L ${cmd.points[0].x} ${cmd.points[0].y} `;
+                                    } else if (cmd.type === 'C' && cmd.points.length >= 3) {
+                                      d += `C ${cmd.points[0].x} ${cmd.points[0].y}, ${cmd.points[1].x} ${cmd.points[1].y}, ${cmd.points[2].x} ${cmd.points[2].y} `;
+                                    } else if (cmd.type === 'Z') {
+                                      d += 'Z ';
+                                    }
+                                  });
 
-                                    {/* Grainline Arrow */}
-                                    <line
-                                      x1={comp.grainline.start.x}
-                                      y1={comp.grainline.start.y}
-                                      x2={comp.grainline.end.x}
-                                      y2={comp.grainline.end.y}
-                                      stroke="#10b981"
-                                      strokeWidth="2"
-                                    />
-                                    <text
-                                      x={comp.grainline.start.x + 8}
-                                      y={(comp.grainline.start.y + comp.grainline.end.y) / 2}
-                                      fill="#10b981"
-                                      fontSize="10"
-                                      fontWeight="bold"
-                                      transform={`rotate(90, ${comp.grainline.start.x + 8}, ${(comp.grainline.start.y + comp.grainline.end.y) / 2})`}
+                                  return (
+                                    <g
+                                      key={comp.id}
+                                      transform={`translate(${comp.offset.x + 30}, ${comp.offset.y + 40})`}
+                                      className="transition-all duration-200 cursor-pointer"
+                                      onClick={() => setSelectedPreviewPieceId(isPieceSelected ? null : comp.id)}
                                     >
-                                      {comp.grainline.label}
-                                    </text>
+                                      {/* Pattern Piece Shaded Body */}
+                                      <path
+                                        d={d}
+                                        fill={isPieceSelected ? '#38bdf8' : isShirt ? '#ffe4e6' : isTrouser ? '#f1f5f9' : newFabricColor}
+                                        fillOpacity={isPieceSelected ? 0.35 : isShirt ? 0.88 : isTrouser ? 0.85 : 0.18}
+                                        stroke={isPieceSelected ? '#0284c7' : isShirt ? '#e11d48' : isTrouser ? '#0f766e' : newFabricColor}
+                                        strokeWidth={isPieceSelected ? '3.5' : '2.5'}
+                                        strokeLinejoin="round"
+                                        strokeLinecap="round"
+                                      />
 
-                                    {/* Piece Title Tag */}
-                                    <text
-                                      x={comp.labels[0]?.position.x || 60}
-                                      y={comp.labels[0]?.position.y || 80}
-                                      fill={isShirt ? '#881337' : isTrouser ? '#042f2e' : '#f8fafc'}
-                                      fontSize="13"
-                                      fontWeight="bold"
-                                      letterSpacing="0.05em"
-                                    >
-                                      {comp.name}
-                                    </text>
-                                    <text
-                                      x={comp.labels[0]?.position.x || 60}
-                                      y={(comp.labels[0]?.position.y || 80) + 16}
-                                      fill={isShirt ? '#9f1239' : isTrouser ? '#115e59' : '#94a3b8'}
-                                      fontSize="10"
-                                      fontWeight="600"
-                                    >
-                                      {comp.cutInstruction} • Size {currentSize}
-                                    </text>
+                                      {/* Seam Allowance Offset Line */}
+                                      <path
+                                        d={d}
+                                        fill="none"
+                                        stroke="#38bdf8"
+                                        strokeWidth="1.2"
+                                        strokeDasharray="4 3"
+                                        opacity="0.85"
+                                        transform="scale(1.02)"
+                                      />
 
-                                    {/* Internals (Pocket, Fold Lines) */}
-                                    {comp.internals?.map((internal) => {
-                                      const internalPath = internal.points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + (internal.closed ? ' Z' : '');
-                                      return (
-                                        <path
-                                          key={internal.id}
-                                          d={internalPath}
-                                          fill={internal.type === 'pocket' ? 'rgba(59, 130, 246, 0.08)' : 'none'}
-                                          stroke={internal.color || '#3b82f6'}
-                                          strokeWidth="1.5"
-                                          strokeDasharray={internal.type === 'line' ? '4 2' : 'none'}
-                                        />
-                                      );
-                                    })}
+                                      {/* Grainline Arrow */}
+                                      <line
+                                        x1={comp.grainline.start.x}
+                                        y1={comp.grainline.start.y}
+                                        x2={comp.grainline.end.x}
+                                        y2={comp.grainline.end.y}
+                                        stroke="#10b981"
+                                        strokeWidth="2"
+                                      />
+                                      <text
+                                        x={comp.grainline.start.x + 8}
+                                        y={(comp.grainline.start.y + comp.grainline.end.y) / 2}
+                                        fill="#10b981"
+                                        fontSize="10"
+                                        fontWeight="bold"
+                                        transform={`rotate(90, ${comp.grainline.start.x + 8}, ${(comp.grainline.start.y + comp.grainline.end.y) / 2})`}
+                                      >
+                                        {comp.grainline.label}
+                                      </text>
 
-                                    {/* Landmark Point Dots */}
-                                    {comp.paths.flatMap((p) => p.points).filter((pt) => !pt.isControl && pt.name).map((pt, pIdx) => (
-                                      <g key={pIdx} transform={`translate(${pt.x}, ${pt.y})`}>
-                                        <circle r="3.5" fill="#3b82f6" stroke="#ffffff" strokeWidth="1.5" />
-                                        <text x="6" y="3" fill={isShirt ? '#1e293b' : '#cbd5e1'} fontSize="9" fontWeight="600">
-                                          {pt.name}
-                                        </text>
-                                      </g>
-                                    ))}
-                                  </g>
-                                );
-                              })}
+                                      {/* Piece Title Tag */}
+                                      <text
+                                        x={comp.labels[0]?.position.x || 60}
+                                        y={comp.labels[0]?.position.y || 80}
+                                        fill={isShirt ? '#881337' : isTrouser ? '#042f2e' : '#f8fafc'}
+                                        fontSize="13"
+                                        fontWeight="bold"
+                                        letterSpacing="0.05em"
+                                      >
+                                        {comp.name}
+                                      </text>
+                                      <text
+                                        x={comp.labels[0]?.position.x || 60}
+                                        y={(comp.labels[0]?.position.y || 80) + 16}
+                                        fill={isShirt ? '#9f1239' : isTrouser ? '#115e59' : '#94a3b8'}
+                                        fontSize="10"
+                                        fontWeight="600"
+                                      >
+                                        {comp.cutInstruction} • Size {currentSize}
+                                      </text>
+
+                                      {/* Internals (Pocket, Fold Lines) */}
+                                      {comp.internals?.map((internal) => {
+                                        const internalPath = internal.points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') + (internal.closed ? ' Z' : '');
+                                        return (
+                                          <path
+                                            key={internal.id}
+                                            d={internalPath}
+                                            fill={internal.type === 'pocket' ? 'rgba(59, 130, 246, 0.08)' : 'none'}
+                                            stroke={internal.color || '#3b82f6'}
+                                            strokeWidth="1.5"
+                                            strokeDasharray={internal.type === 'line' ? '4 2' : 'none'}
+                                          />
+                                        );
+                                      })}
+
+                                      {/* Landmark Point Dots & Labels */}
+                                      {comp.paths.flatMap((p) => p.points).filter((pt) => !pt.isControl && pt.name).map((pt, pIdx) => {
+                                        const isMajor = isMajorLandmark(pt.name);
+                                        if (previewLabelMode === 'none') return null;
+                                        if (previewLabelMode === 'clean' && !isMajor) return null;
+
+                                        const isHovered = hoveredLandmark?.name === pt.name && hoveredLandmark?.pieceName === comp.name;
+                                        const yOffset = pIdx % 2 === 0 ? -10 : 14;
+                                        const xOffset = pIdx % 3 === 0 ? 8 : -8;
+                                        const textAnchor = pIdx % 3 === 0 ? 'start' : 'end';
+
+                                        return (
+                                          <g
+                                            key={pIdx}
+                                            transform={`translate(${pt.x}, ${pt.y})`}
+                                            className="cursor-pointer group"
+                                            onMouseEnter={() => setHoveredLandmark({ name: pt.name!, x: Math.round(pt.x), y: Math.round(pt.y), pieceName: comp.name })}
+                                            onMouseLeave={() => setHoveredLandmark(null)}
+                                          >
+                                            <circle
+                                              r={isHovered ? 5.5 : 3.5}
+                                              fill={isHovered ? '#f59e0b' : '#3b82f6'}
+                                              stroke="#ffffff"
+                                              strokeWidth={isHovered ? 2 : 1.5}
+                                              className="transition-all"
+                                            />
+                                            {previewLabelMode !== 'hover' && (
+                                              <g pointerEvents="none">
+                                                <rect
+                                                  x={textAnchor === 'start' ? xOffset - 3 : xOffset - (pt.name!.length * 5.8) - 3}
+                                                  y={yOffset - 9}
+                                                  width={pt.name!.length * 5.8 + 6}
+                                                  height={12}
+                                                  fill="#090d16"
+                                                  fillOpacity="0.88"
+                                                  rx="2.5"
+                                                />
+                                                <text
+                                                  x={xOffset}
+                                                  y={yOffset}
+                                                  textAnchor={textAnchor}
+                                                  fill={isHovered ? '#fbbf24' : '#e2e8f0'}
+                                                  fontSize="8.5"
+                                                  fontWeight={isMajor ? 'bold' : '600'}
+                                                >
+                                                  {pt.name}
+                                                </text>
+                                              </g>
+                                            )}
+                                          </g>
+                                        );
+                                      })}
+                                    </g>
+                                  );
+                                })}
 
                               {/* EXACT IMAGE 1 TECHNICAL DIMENSION CALLOUT ANNOTATIONS FOR SHIRT */}
                               {isShirt && (
@@ -4016,8 +4759,52 @@ export const EasyPatternStudio: React.FC = () => {
                                 </g>
                               )}
                             </svg>
+                          );
+                        })()}
+
+                        {/* Floating Landmark Hover Card */}
+                        {hoveredLandmark && (
+                          <div className="absolute bottom-4 right-4 bg-slate-900/95 border border-amber-500/60 backdrop-blur-md rounded-xl p-3 shadow-2xl text-xs z-30 pointer-events-none flex items-center gap-3 animate-in fade-in">
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                            <div>
+                              <div className="text-[10px] text-zinc-400 font-semibold">{hoveredLandmark.pieceName}</div>
+                              <div className="font-bold text-amber-300 text-xs">{hoveredLandmark.name}</div>
+                              <div className="text-[10px] font-mono text-zinc-300">
+                                X: {hoveredLandmark.x}mm • Y: {hoveredLandmark.y}mm ({Math.round(hoveredLandmark.x / 10)}cm, {Math.round(hoveredLandmark.y / 10)}cm)
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quick Piece Focus Bar */}
+                        <div className="absolute bottom-2 left-4 z-20 flex items-center gap-1.5 flex-wrap bg-slate-900/85 backdrop-blur-md border border-zinc-800 rounded-xl px-2.5 py-1.5 shadow-lg">
+                          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Focus:</span>
+                          {previewGarment.components.map((comp) => {
+                            const isSelected = selectedPreviewPieceId === comp.id;
+                            return (
+                              <button
+                                key={comp.id}
+                                onClick={() => setSelectedPreviewPieceId(isSelected ? null : comp.id)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-blue-600 border-blue-400 text-white shadow-xs'
+                                    : 'bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-zinc-500'
+                                }`}
+                              >
+                                {comp.name.replace(`${newProductName} `, '')}
+                              </button>
+                            );
+                          })}
+                          {selectedPreviewPieceId && (
+                            <button
+                              onClick={() => setSelectedPreviewPieceId(null)}
+                              className="text-[10px] text-zinc-400 hover:text-white underline ml-1 cursor-pointer"
+                            >
+                              Clear
+                            </button>
                           )}
                         </div>
+                      </div>
 
                         {/* Bottom Launch Actions (Create Product from Start to Finish) */}
                         <div className="p-4 bg-[#141721] border-t border-zinc-800 flex items-center justify-between gap-4 shrink-0">
