@@ -23,6 +23,7 @@ import { EditComponentModal } from './components/modals/EditComponentModal';
 import { AddComponentModal } from './components/modals/AddComponentModal';
 import { CloMainStudio } from './components/clo3d/CloMainStudio';
 import { EasyPatternStudio } from './components/easypattern/EasyPatternStudio';
+import { CollabUnifiedStudio } from './components/collab/CollabUnifiedStudio';
 import { TukaDrawingToolbar } from './components/tukacad/TukaDrawingToolbar';
 import { WorkflowGuideModal } from './components/workflow/WorkflowGuideModal';
 import { useCADStore } from './store/useCADStore';
@@ -75,11 +76,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#121316] select-none font-sans">
-      {/* Dynamic Engine Workspace: EasyPattern / CLO 3D / TUKAcad */}
+      {/* Dynamic Engine Workspace: EasyPattern / CLO 3D / Collab 3-in-1 / TUKAcad */}
       {cadEngineMode === 'easypattern' ? (
         <EasyPatternStudio />
       ) : cadEngineMode === 'clo3d' ? (
         <CloMainStudio />
+      ) : cadEngineMode === 'collab' ? (
+        <CollabUnifiedStudio />
       ) : (
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Top Application Toolbar & TUKA Windows Menu */}

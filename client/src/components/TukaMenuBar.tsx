@@ -295,6 +295,16 @@ export const TukaMenuBar: React.FC = () => {
             <Box className="w-3 h-3" />
             <span>CLO 3D Studio</span>
           </button>
+
+          {/* 3-in-1 Triple Engine Collab Studio (EasyPattern + TUKAcad + CLO 3D) */}
+          <button
+            onClick={() => setCADEngineMode('collab')}
+            className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white text-[10px] font-extrabold shadow-md shadow-emerald-500/30 transition-all flex items-center gap-1 animate-pulse"
+            title="Launch 3-in-1 Triple Engine Collab Studio (EasyPattern + TUKAcad 2D + CLO 3D in Real-Time Sync)"
+          >
+            <Sparkles className="w-3 h-3 text-amber-200 fill-amber-200" />
+            <span>⚡ 3-in-1 Collab</span>
+          </button>
         </div>
       </div>
 

@@ -205,6 +205,9 @@ interface CADState {
   setMarkerWidthCm: (w: number) => void;
   fabricLengthMeters: number;
   setFabricLengthMeters: (l: number) => void;
+  sloperDeltas: { bust: number; waist: number; shoulder: number; length: number };
+  setSloperDeltas: (deltas: Partial<{ bust: number; waist: number; shoulder: number; length: number }>) => void;
+  resetSloperDeltas: () => void;
 
   // TUKAcad Workflow State (Steps 1 to 6)
   tukacadWorkflowStep: TukacadWorkflowStep;
@@ -417,6 +420,45 @@ export const useCADStore = create<CADState>((set, get) => ({
   setMarkerWidthCm: (w) => set({ markerWidthCm: w }),
   fabricLengthMeters: 87.5,
   setFabricLengthMeters: (l) => set({ fabricLengthMeters: l }),
+  sloperDeltas: { bust: 0, waist: 0, shoulder: 0, length: 0 },
+  setSloperDeltas: (deltaUpdate) => {
+    const { sloperDeltas, garment } = get();
+    const newDeltas = { ...sloperDeltas, ...deltaUpdate };
+
+    // Calculate incremental difference in deltas (in mm)
+    const dBust = (newDeltas.bust - sloperDeltas.bust) * 2.5;
+    const dWaist = (newDeltas.waist - sloperDeltas.waist) * 2.5;
+    const dShoulder = (newDeltas.shoulder - sloperDeltas.shoulder) * 3.0;
+    const dLength = (newDeltas.length - sloperDeltas.length) * 3.0;
+
+    // Apply incremental transformation to matching zoned contour points
+    const updatedComponents = garment.components.map((c) => ({
+      ...c,
+      paths: c.paths.map((p) => ({
+        ...p,
+        points: p.points.map((pt) => {
+          let nx = pt.x;
+          let ny = pt.y;
+          if (p.zone === 'shoulder') nx += dShoulder;
+          if (p.zone === 'bust' || p.zone === 'armhole') nx += dBust;
+          if (p.zone === 'waist') {
+            nx += dWaist;
+            ny += dLength;
+          }
+          if (p.zone === 'hem') ny += dLength;
+          return { ...pt, x: Math.round(nx), y: Math.round(ny) };
+        }),
+      })),
+    }));
+
+    set({
+      sloperDeltas: newDeltas,
+      garment: { ...garment, components: updatedComponents },
+    });
+  },
+  resetSloperDeltas: () => {
+    set({ sloperDeltas: { bust: 0, waist: 0, shoulder: 0, length: 0 } });
+  },
 
   // TUKAcad Workflow Defaults
   tukacadWorkflowStep: 1,

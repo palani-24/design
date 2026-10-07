@@ -163,10 +163,21 @@ export const WorkflowGuideModal: React.FC = () => {
             >
               TUKAcad (6 Steps)
             </button>
+            <button
+              onClick={() => {
+                setCADEngineMode('collab');
+                setIsWorkflowModalOpen(false);
+              }}
+              className="px-3 py-1 rounded-md font-extrabold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white shadow-md shadow-emerald-500/20 flex items-center gap-1.5 ml-2 transition-all animate-pulse"
+              title="Launch Unified 3-in-1 Triple Collab Studio (EasyPattern + TUKAcad 2D + CLO 3D)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
+              <span>⚡ Launch 3-in-1 Collab Studio</span>
+            </button>
           </div>
 
-          <div className="text-[11px] text-slate-400 hidden sm:block">
-            Click any step card below to interactively launch that stage!
+          <div className="text-[11px] text-slate-400 hidden lg:block">
+            All 3 engines (EasyPattern + TUKAcad + CLO 3D) collaborate in real-time!
           </div>
         </div>
 

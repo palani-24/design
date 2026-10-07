@@ -791,6 +791,14 @@ export const EasyPatternStudio: React.FC = () => {
             >
               CLO 3D
             </button>
+            <button
+              onClick={() => setCADEngineMode('collab')}
+              className="px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs hover:from-emerald-400 hover:to-teal-500 flex items-center gap-1"
+              title="Launch 3-in-1 Triple Engine Collab Studio (EasyPattern + TUKAcad 2D + CLO 3D)"
+            >
+              <Sparkles className="w-3 h-3 text-amber-200" />
+              <span>⚡ Collab</span>
+            </button>
           </div>
         </div>
       </header>

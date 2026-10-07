@@ -174,7 +174,7 @@ export interface MeasureToolState {
 // ==========================================
 // CAD Engine & Workflow Types
 // ==========================================
-export type CADEngineMode = 'easypattern' | 'tukacad' | 'clo3d' | 'workflow-guide';
+export type CADEngineMode = 'easypattern' | 'tukacad' | 'clo3d' | 'collab' | 'workflow-guide';
 export type EasyPatternStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type TukacadWorkflowStep = 1 | 2 | 3 | 4 | 5 | 6;
 
