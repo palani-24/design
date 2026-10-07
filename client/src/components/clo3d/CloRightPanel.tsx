@@ -19,6 +19,9 @@ export const CloRightPanel: React.FC = () => {
     setActiveRightTab,
     activeFabric,
     setActiveFabric,
+    garment,
+    selectedComponentId,
+    setSelectedComponent,
   } = useCADStore();
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(language, key);
@@ -51,26 +54,29 @@ export const CloRightPanel: React.FC = () => {
                   </div>
                   <div className="bg-[#16171c] rounded border border-[#2d2f36] p-2 space-y-1 text-[11px]">
                     <div className="flex items-center justify-between p-1 bg-[#00a8ff]/15 rounded text-[#00a8ff] font-semibold">
-                      <span>👗 3D Garment (Bodice & Skirt)</span>
+                      <span>👗 {garment.name} ({garment.components.length} Pieces)</span>
                       <Eye className="w-3.5 h-3.5" />
                     </div>
                     <div className="pl-3 space-y-1 text-zinc-300">
-                      <div className="p-1 hover:bg-[#252830] rounded flex items-center justify-between">
-                        <span>• Bodice Front (Crop Top)</span>
-                        <span className="text-[9px] text-zinc-500">Cyan Silk</span>
-                      </div>
-                      <div className="p-1 hover:bg-[#252830] rounded flex items-center justify-between">
-                        <span>• Bodice Back Panel</span>
-                        <span className="text-[9px] text-zinc-500">Cyan Silk</span>
-                      </div>
-                      <div className="p-1 hover:bg-[#252830] rounded flex items-center justify-between">
-                        <span>• Flared Skirt Front</span>
-                        <span className="text-[9px] text-zinc-500">White Drape</span>
-                      </div>
-                      <div className="p-1 hover:bg-[#252830] rounded flex items-center justify-between">
-                        <span>• Flared Skirt Back</span>
-                        <span className="text-[9px] text-zinc-500">White Drape</span>
-                      </div>
+                      {garment.components.map((comp) => {
+                        const isSelected = selectedComponentId === comp.id;
+                        return (
+                          <div
+                            key={comp.id}
+                            onClick={() => setSelectedComponent(comp.id)}
+                            className={`p-1 rounded flex items-center justify-between cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-[#00a8ff]/25 text-[#00a8ff] font-bold'
+                                : 'hover:bg-[#252830]'
+                            }`}
+                          >
+                            <span>• {comp.name}</span>
+                            <span className="text-[9px] text-zinc-400 font-mono">
+                              {comp.pieceCode || comp.cutInstruction}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

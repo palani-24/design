@@ -35,6 +35,8 @@ export const CloLeftDrawer: React.FC = () => {
     activeLeftDrawer,
     setActiveLeftDrawer,
     loadGarmentTemplate,
+    garment,
+    setActiveModal,
   } = useCADStore();
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(language, key);
@@ -312,42 +314,60 @@ export const CloLeftDrawer: React.FC = () => {
               </div>
             )}
 
-            {/* When GARMENT tab is selected */}
+            {/* When GARMENT tab is selected: Full Product Library */}
             {activeLibraryTab === 'Garment' && (
               <div className="flex flex-col gap-1">
-                <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[#64748b] font-bold">
-                  Modular Garment Templates
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[#64748b] font-bold flex items-center justify-between">
+                  <span>Product Library (13 Styles)</span>
+                  <button
+                    onClick={() => setActiveModal('manualGarment')}
+                    className="text-[9px] text-[#00a8ff] hover:underline"
+                  >
+                    + Custom
+                  </button>
                 </div>
-                <button
-                  onClick={() => {}}
-                  className="w-full text-left p-2 rounded bg-[#00a8ff]/20 text-[#00a8ff] font-bold border border-[#00a8ff]/40 flex items-center gap-2"
-                >
-                  <Shirt className="w-4 h-4" />
-                  <div>
-                    <div>Bodice & Flared Skirt</div>
-                    <div className="text-[9px] font-normal text-sky-300">CLO 3D Academic Preset</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => loadGarmentTemplate('bootcut-pant')}
-                  className="w-full text-left p-2 rounded hover:bg-[#252830] text-[#cbd5e1] flex items-center gap-2"
-                >
-                  <Shirt className="w-4 h-4" />
-                  <div>
-                    <div>Womens Boot Cut Pant</div>
-                    <div className="text-[9px] text-[#8e909a]">TUKAcad tud format (10 pieces)</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => loadGarmentTemplate('basic-tshirt')}
-                  className="w-full text-left p-2 rounded hover:bg-[#252830] text-[#cbd5e1] flex items-center gap-2"
-                >
-                  <Shirt className="w-4 h-4" />
-                  <div>
-                    <div>Basic T-Shirt</div>
-                    <div className="text-[9px] text-[#8e909a]">Crew Neck Jersey</div>
-                  </div>
-                </button>
+                {[
+                  { id: 'basic-bodice', name: 'Bodice & Flared Skirt', tag: 'Academic Preset', desc: 'Crop top & A-line skirt' },
+                  { id: 'basic-bodice', name: "Women's Basic Bodice", tag: '2 Pcs', desc: 'Front & Back with Darts' },
+                  { id: 'sheath-dress', name: 'Princess Seam Sheath Dress', tag: '6 Pcs', desc: 'Form-fitted couture bodice' },
+                  { id: 'flared-skirt', name: '8-Gore Flared Skirt', tag: '4 Pcs', desc: 'Balanced sweeping hemline' },
+                  { id: 'bootcut-pant', name: 'Womens Boot Cut Pant', tag: '10 Pcs', desc: 'TUKAcad tud format v4.8' },
+                  { id: 'denim-jeans', name: '5-Pocket Raw Denim Jeans', tag: '8 Pcs', desc: 'Coin pocket & curved yoke' },
+                  { id: 'trench-coat', name: 'Classic Belted Trench Coat', tag: '14 Pcs', desc: 'Storm flaps & epaulettes' },
+                  { id: 'bomber-jacket', name: 'MA-1 Flight Bomber Jacket', tag: '8 Pcs', desc: 'Welt pockets & rib waist' },
+                  { id: 'suit-jacket', name: 'Mens Tailored Suit Jacket', tag: '16 Pcs', desc: 'Chest canvas & sleeves' },
+                  { id: 'double-breasted-blazer', name: 'DB Peak Lapel Blazer', tag: '10 Pcs', desc: 'Double-breasted wrap' },
+                  { id: 'shirt', name: 'Casual Button-Up Oxford', tag: 'Base', desc: 'Two-piece collar & cuffs' },
+                  { id: 'basic-tshirt', name: 'Basic Crew-Neck T-Shirt', tag: '1-Object', desc: 'Front, Back & Sleeve' },
+                  { id: 'polo', name: 'Pique Polo T-Shirt', tag: 'v2.1', desc: 'Knit collar & box placket' },
+                ].map((g, idx) => {
+                  const isActive = garment.name.toLowerCase().includes(g.id.replace('-', ' ')) ||
+                    (g.id === 'basic-bodice' && garment.name.toLowerCase().includes('bodice'));
+                  return (
+                    <button
+                      key={`${g.id}-${idx}`}
+                      onClick={() => {
+                        loadGarmentTemplate(g.id as any);
+                      }}
+                      className={`w-full text-left p-2 rounded flex items-center gap-2 transition-colors border ${
+                        isActive
+                          ? 'bg-[#00a8ff]/20 text-[#00a8ff] font-bold border-[#00a8ff]/40 shadow-xs'
+                          : 'border-transparent hover:bg-[#252830] text-[#cbd5e1]'
+                      }`}
+                    >
+                      <Shirt className="w-4 h-4 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-xs">{g.name}</span>
+                          <span className="text-[9px] px-1 rounded bg-[#2b2d35] text-[#8e909a] font-mono ml-1 shrink-0">
+                            {g.tag}
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-[#8e909a] truncate font-normal">{g.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

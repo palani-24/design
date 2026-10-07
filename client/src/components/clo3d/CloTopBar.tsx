@@ -29,6 +29,8 @@ export const CloTopBar: React.FC = () => {
     toggleSimulation,
     activeFabric,
     setIsWorkflowModalOpen,
+    garment,
+    setActiveModal,
   } = useCADStore();
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(language, key);
@@ -58,8 +60,17 @@ export const CloTopBar: React.FC = () => {
                 v6.1.186
               </span>
             </div>
-            <span className="text-[9px] text-[#8e909a] font-mono -mt-0.5">
-              bodice_export.zprj • {activeFabric.name}
+            <span className="text-[9px] text-[#8e909a] font-mono -mt-0.5 flex items-center gap-1.5">
+              <span>{garment.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.zprj</span>
+              <span>•</span>
+              <span className="text-[#00a8ff]">{activeFabric.name}</span>
+              <button
+                onClick={() => setActiveModal('new')}
+                className="ml-1 text-[8.5px] px-1.5 py-0.2 bg-[#2d2f36] hover:bg-[#3d404d] text-white rounded font-sans cursor-pointer transition-colors"
+                title="Change or Create New Garment Project"
+              >
+                Change Product
+              </button>
             </span>
           </div>
         </div>

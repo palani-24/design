@@ -32,6 +32,7 @@ export const Clo3DViewport: React.FC = () => {
     toggleGarmentVisible,
     activeFabric,
     selectedAvatarPose,
+    garment,
   } = useCADStore();
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(language, key);
@@ -43,6 +44,8 @@ export const Clo3DViewport: React.FC = () => {
   const skirtMeshRef = useRef<THREE.Mesh | null>(null);
   const bodiceMeshRef = useRef<THREE.Mesh | null>(null);
   const avatarGroupRef = useRef<THREE.Group | null>(null);
+  const leftArmGroupRef = useRef<THREE.Group | null>(null);
+  const rightArmGroupRef = useRef<THREE.Group | null>(null);
   const originalSkirtPositionsRef = useRef<Float32Array | null>(null);
 
   // Camera Orbit State
@@ -213,6 +216,7 @@ export const Clo3DViewport: React.FC = () => {
 
     // Left Arm
     const leftArmGroup = new THREE.Group();
+    leftArmGroupRef.current = leftArmGroup;
     leftArmGroup.position.set(0.19, 1.42, 0);
     leftArmGroup.rotation.z = -armAngle;
 
@@ -237,6 +241,7 @@ export const Clo3DViewport: React.FC = () => {
 
     // Right Arm (Mirrored)
     const rightArmGroup = new THREE.Group();
+    rightArmGroupRef.current = rightArmGroup;
     rightArmGroup.position.set(-0.19, 1.42, 0);
     rightArmGroup.rotation.z = armAngle;
 
@@ -478,6 +483,45 @@ export const Clo3DViewport: React.FC = () => {
     }
   }, [avatarVisible, garmentVisible]);
 
+  // Update Avatar Pose based on selectedAvatarPose
+  useEffect(() => {
+    if (!leftArmGroupRef.current || !rightArmGroupRef.current) return;
+    const leftArm = leftArmGroupRef.current;
+    const rightArm = rightArmGroupRef.current;
+
+    switch (selectedAvatarPose) {
+      case 'FV2_02_Aforsize':
+        leftArm.rotation.set(0, 0, -0.85);
+        rightArm.rotation.set(0, 0, 0.85);
+        break;
+      case 'FV2_03_Attention':
+        leftArm.rotation.set(0, 0, -0.12);
+        rightArm.rotation.set(0, 0, 0.12);
+        break;
+      case 'FV2_04':
+        leftArm.rotation.set(0.15, 0, -0.38);
+        rightArm.rotation.set(-0.25, 0, 0.65);
+        break;
+      case 'FV2_08_Running':
+        leftArm.rotation.set(-0.7, 0, -0.28);
+        rightArm.rotation.set(0.7, 0, 0.28);
+        break;
+      case 'FV2_09_Sitting':
+        leftArm.rotation.set(0.55, 0, -0.2);
+        rightArm.rotation.set(0.55, 0, 0.2);
+        break;
+      case 'FV2_10_ArmsUp':
+        leftArm.rotation.set(0, 0, -1.35);
+        rightArm.rotation.set(0, 0, 1.35);
+        break;
+      case 'FV2_01_A':
+      default:
+        leftArm.rotation.set(0, 0, -0.52);
+        rightArm.rotation.set(0, 0, 0.52);
+        break;
+    }
+  }, [selectedAvatarPose]);
+
   // Handle Mouse Events for Orbit / Pan / Zoom
   const handleMouseDown = (e: React.MouseEvent) => {
     isDraggingRef.current = true;
@@ -570,7 +614,7 @@ export const Clo3DViewport: React.FC = () => {
       {/* 1. Header Overlay: Project Filename matching CLO 3D */}
       <div className="absolute top-2.5 left-3 pointer-events-none flex items-center gap-2">
         <span className="font-mono text-xs text-[#2a2d34] bg-white/60 backdrop-blur-md px-2.5 py-1 rounded shadow-xs font-semibold">
-          bodice_export.zprj
+          {garment.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.zprj
         </span>
         {isSimulating && (
           <span className="flex items-center gap-1.5 text-[10px] font-bold text-white bg-[#00a8ff]/90 backdrop-blur-md px-2 py-0.5 rounded shadow-sm">
