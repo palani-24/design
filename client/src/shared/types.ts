@@ -172,9 +172,48 @@ export interface MeasureToolState {
 }
 
 // ==========================================
-// CLO 3D Standalone Engine Types
+// CAD Engine & Workflow Types
 // ==========================================
-export type CADEngineMode = 'clo3d' | 'tukacad';
+export type CADEngineMode = 'easypattern' | 'tukacad' | 'clo3d' | 'workflow-guide';
+export type EasyPatternStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type TukacadWorkflowStep = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type EasyPatternTool =
+  | 'select'
+  | 'point'
+  | 'line'
+  | 'curve'
+  | 'dart'
+  | 'seam'
+  | 'notch'
+  | 'measure';
+
+export type TukacadTool =
+  | 'point'
+  | 'line'
+  | 'curve'
+  | 'arc'
+  | 'rectangle'
+  | 'circle'
+  | 'spline'
+  | 'fillet'
+  | 'offset'
+  | 'mirror'
+  | 'rotate'
+  | 'trim'
+  | 'extend'
+  | 'break'
+  | 'join'
+  | 'text';
+
+export interface EasyGradingRuleItem {
+  point: string;
+  gradeRule: string;
+  deltaCm: number;
+  color: string;
+  sizeName: string;
+}
+
 export type CloViewMode = 'split' | '3d-only' | '2d-only';
 export type Language = 'ta' | 'en';
 export type SurfaceMode = 'textured' | 'wireframe' | 'stressMap' | 'translucent';

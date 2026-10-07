@@ -16,7 +16,18 @@ import {
   FabricPhysics,
   PatternComponent,
   CustomGarmentInput,
+  EasyPatternStep,
+  TukacadWorkflowStep,
+  EasyPatternTool,
+  TukacadTool,
 } from '@shared/types';
+import {
+  createBasicBodice,
+  EASY_PATTERN_GRADING_RULES,
+  SIZE_COLOR_PALETTE,
+  TUKACAD_GRADING_MATRIX,
+  BASIC_BODICE_SIZE_TABLE,
+} from '@shared/easyPatternConstants';
 import {
   createDefaultBasicTShirt,
   createPoloTShirt,
@@ -165,6 +176,57 @@ interface CADState {
   setActiveRightTab: (tab: 'none' | 'objectBrowser' | 'propertyEditor') => void;
   setActiveLeftDrawer: (drawer: 'library' | 'history' | 'modular' | 'none') => void;
 
+  // EasyPattern Workflow State (Steps 1 to 8)
+  easyPatternStep: EasyPatternStep;
+  setEasyPatternStep: (step: EasyPatternStep) => void;
+  easyPatternTool: EasyPatternTool;
+  setEasyPatternTool: (tool: EasyPatternTool) => void;
+  garmentCategory: 'Women' | 'Men' | 'Children' | 'Custom';
+  setGarmentCategory: (category: 'Women' | 'Men' | 'Children' | 'Custom') => void;
+  garmentType: string;
+  setGarmentType: (type: string) => void;
+  selectedSizeRange: GarmentSize[];
+  setSelectedSizeRange: (range: GarmentSize[]) => void;
+  toggleSizeInRange: (size: GarmentSize) => void;
+  measurementInputMode: 'manual' | 'sizechart';
+  setMeasurementInputMode: (mode: 'manual' | 'sizechart') => void;
+  seamAllowanceCm: number;
+  setSeamAllowanceCm: (val: number) => void;
+  notchSizeCm: number;
+  setNotchSizeCm: (val: number) => void;
+  showEasyPatternLabel: boolean;
+  setShowEasyPatternLabel: (show: boolean) => void;
+  showEasyPatternGrainline: boolean;
+  setShowEasyPatternGrainline: (show: boolean) => void;
+  showEasyPatternGrading: boolean;
+  setShowEasyPatternGrading: (show: boolean) => void;
+  markerWidthCm: number;
+  setMarkerWidthCm: (w: number) => void;
+  fabricLengthMeters: number;
+  setFabricLengthMeters: (l: number) => void;
+
+  // TUKAcad Workflow State (Steps 1 to 6)
+  tukacadWorkflowStep: TukacadWorkflowStep;
+  setTukacadWorkflowStep: (step: TukacadWorkflowStep) => void;
+  tukacadTool: TukacadTool;
+  setTukacadTool: (tool: TukacadTool) => void;
+  tukaPointCoords: { x: number; y: number };
+  setTukaPointCoords: (coords: { x: number; y: number }) => void;
+  tukaLineLengthCm: number;
+  setTukaLineLengthCm: (len: number) => void;
+  markerUtilization: number;
+  setMarkerUtilization: (u: number) => void;
+
+  // Workflow Guide Modal State
+  isWorkflowModalOpen: boolean;
+  setIsWorkflowModalOpen: (open: boolean) => void;
+  activeGuideStep: { mode: 'easypattern' | 'tukacad'; step: number } | null;
+  setActiveGuideStep: (step: { mode: 'easypattern' | 'tukacad'; step: number } | null) => void;
+
+  // Cross-Engine Transitions
+  transferToTukacad: () => void;
+  transferToEasyPattern: () => void;
+
   // Undo / Redo
   undo: () => void;
   redo: () => void;
@@ -176,6 +238,7 @@ interface CADState {
   createNewProject: (title?: string) => void;
   loadGarmentTemplate: (
     templateId:
+      | 'basic-bodice'
       | 'basic-tshirt'
       | 'polo'
       | 'shirt'
@@ -301,6 +364,78 @@ export const useCADStore = create<CADState>((set, get) => ({
   setActiveLibraryTab: (tab) => set({ activeLibraryTab: tab }),
   setActiveRightTab: (tab) => set({ activeRightTab: tab }),
   setActiveLeftDrawer: (drawer) => set({ activeLeftDrawer: drawer }),
+
+  // EasyPattern Workflow Defaults
+  easyPatternStep: 1,
+  setEasyPatternStep: (step) => set({ easyPatternStep: step }),
+  easyPatternTool: 'select',
+  setEasyPatternTool: (tool) => set({ easyPatternTool: tool }),
+  garmentCategory: 'Women',
+  setGarmentCategory: (category) => set({ garmentCategory: category }),
+  garmentType: 'Basic Bodice',
+  setGarmentType: (type) => set({ garmentType: type }),
+  selectedSizeRange: ['S', 'M', 'L', 'XL', 'XXL'],
+  setSelectedSizeRange: (range) => set({ selectedSizeRange: range }),
+  toggleSizeInRange: (size) =>
+    set((s) => {
+      const exists = s.selectedSizeRange.includes(size);
+      const updated = exists
+        ? s.selectedSizeRange.filter((x) => x !== size)
+        : [...s.selectedSizeRange, size];
+      return { selectedSizeRange: updated.length ? updated : [size] };
+    }),
+  measurementInputMode: 'manual',
+  setMeasurementInputMode: (mode) => set({ measurementInputMode: mode }),
+  seamAllowanceCm: 1.0,
+  setSeamAllowanceCm: (val) => set({ seamAllowanceCm: val }),
+  notchSizeCm: 0.3,
+  setNotchSizeCm: (val) => set({ notchSizeCm: val }),
+  showEasyPatternLabel: true,
+  setShowEasyPatternLabel: (show) => set({ showEasyPatternLabel: show }),
+  showEasyPatternGrainline: true,
+  setShowEasyPatternGrainline: (show) => set({ showEasyPatternGrainline: show }),
+  showEasyPatternGrading: true,
+  setShowEasyPatternGrading: (show) => set({ showEasyPatternGrading: show }),
+  markerWidthCm: 150,
+  setMarkerWidthCm: (w) => set({ markerWidthCm: w }),
+  fabricLengthMeters: 87.5,
+  setFabricLengthMeters: (l) => set({ fabricLengthMeters: l }),
+
+  // TUKAcad Workflow Defaults
+  tukacadWorkflowStep: 1,
+  setTukacadWorkflowStep: (step) => set({ tukacadWorkflowStep: step }),
+  tukacadTool: 'point',
+  setTukacadTool: (tool) => set({ tukacadTool: tool }),
+  tukaPointCoords: { x: 12.5, y: 8.2 },
+  setTukaPointCoords: (coords) => set({ tukaPointCoords: coords }),
+  tukaLineLengthCm: 24.3,
+  setTukaLineLengthCm: (len) => set({ tukaLineLengthCm: len }),
+  markerUtilization: 88.7,
+  setMarkerUtilization: (u) => set({ markerUtilization: u }),
+
+  // Workflow Guide Modal
+  isWorkflowModalOpen: false,
+  setIsWorkflowModalOpen: (open) => set({ isWorkflowModalOpen: open }),
+  activeGuideStep: null,
+  setActiveGuideStep: (step) => set({ activeGuideStep: step }),
+
+  // Cross-Engine Transitions
+  transferToTukacad: () => {
+    set({
+      cadEngineMode: 'tukacad',
+      tukacadWorkflowStep: 3,
+      gradingNotification: 'Pattern transferred to TUKAcAd Studio!',
+    });
+    setTimeout(() => set({ gradingNotification: null }), 3000);
+  },
+  transferToEasyPattern: () => {
+    set({
+      cadEngineMode: 'easypattern',
+      easyPatternStep: 3,
+      gradingNotification: 'Pattern loaded into EasyPattern Studio!',
+    });
+    setTimeout(() => set({ gradingNotification: null }), 3000);
+  },
 
   history: [],
   future: [],
@@ -545,7 +680,9 @@ export const useCADStore = create<CADState>((set, get) => ({
   loadGarmentTemplate: (templateId) => {
     const { history, garment, currentProject } = get();
     let newGarment: Garment;
-    if (templateId === 'polo') {
+    if (templateId === 'basic-bodice') {
+      newGarment = createBasicBodice();
+    } else if (templateId === 'polo') {
       newGarment = createPoloTShirt();
     } else if (templateId === 'shirt') {
       newGarment = createCasualShirt();

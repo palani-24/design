@@ -22,6 +22,9 @@ import { EditGarmentModal } from './components/modals/EditGarmentModal';
 import { EditComponentModal } from './components/modals/EditComponentModal';
 import { AddComponentModal } from './components/modals/AddComponentModal';
 import { CloMainStudio } from './components/clo3d/CloMainStudio';
+import { EasyPatternStudio } from './components/easypattern/EasyPatternStudio';
+import { TukaDrawingToolbar } from './components/tukacad/TukaDrawingToolbar';
+import { WorkflowGuideModal } from './components/workflow/WorkflowGuideModal';
 import { useCADStore } from './store/useCADStore';
 
 
@@ -72,13 +75,18 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#121316] select-none font-sans">
-      {/* Dynamic Engine Workspace: CLO 3D or TUKAcad */}
-      {cadEngineMode === 'clo3d' ? (
+      {/* Dynamic Engine Workspace: EasyPattern / CLO 3D / TUKAcad */}
+      {cadEngineMode === 'easypattern' ? (
+        <EasyPatternStudio />
+      ) : cadEngineMode === 'clo3d' ? (
         <CloMainStudio />
       ) : (
         <div className="flex flex-col h-full w-full overflow-hidden">
           {/* Top Application Toolbar & TUKA Windows Menu */}
           <TukaMenuBar />
+
+          {/* TUKAcad 16 Vector Precision Drawing Tools (Step 2 of Workflow) */}
+          <TukaDrawingToolbar />
 
           {/* Main CAD 3-Pane Viewport */}
           <main className="flex-1 flex overflow-hidden">
@@ -94,7 +102,10 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Dialogs Available in Both Modes */}
+      {/* Global Interactive Workflow Guide Infographic Modal */}
+      <WorkflowGuideModal />
+
+      {/* Modal Dialogs Available in All Modes */}
       <NewProjectModal />
       <OpenProjectModal />
       <SaveProjectModal />

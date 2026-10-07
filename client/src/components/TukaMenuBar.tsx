@@ -61,6 +61,7 @@ export const TukaMenuBar: React.FC = () => {
     garment,
     loadGarmentTemplate,
     setCADEngineMode,
+    setIsWorkflowModalOpen,
   } = useCADStore();
 
 
@@ -263,6 +264,26 @@ export const TukaMenuBar: React.FC = () => {
               </option>
             </select>
           </div>
+
+          {/* Workflow Guide Infographic Modal */}
+          <button
+            onClick={() => setIsWorkflowModalOpen(true)}
+            className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold shadow-xs transition-colors flex items-center gap-1"
+            title="Open Complete Workflow Guide (EasyPattern -> TUKAcad Infographic)"
+          >
+            <Workflow className="w-3 h-3 text-amber-400" />
+            <span>Workflow Guide</span>
+          </button>
+
+          {/* Switch to EasyPattern Beginner Studio */}
+          <button
+            onClick={() => setCADEngineMode('easypattern')}
+            className="px-2 py-0.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-[10px] font-bold shadow-xs transition-colors flex items-center gap-1"
+            title="Switch to EasyPattern Beginner Studio"
+          >
+            <Shirt className="w-3 h-3" />
+            <span>EasyPattern</span>
+          </button>
 
           {/* Switch to CLO 3D Studio */}
           <button
