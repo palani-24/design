@@ -67,9 +67,9 @@ export const CloTopBar: React.FC = () => {
               <button
                 onClick={() => setActiveModal('new')}
                 className="ml-1 text-[8.5px] px-1.5 py-0.2 bg-[#2d2f36] hover:bg-[#3d404d] text-white rounded font-sans cursor-pointer transition-colors"
-                title="Change or Create New Garment Project"
+                title="New File (Pattern Generation Workflow)"
               >
-                Change Product
+                New File
               </button>
             </span>
           </div>

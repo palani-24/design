@@ -22,6 +22,11 @@ import {
   MENS_TROUSER_SIZE_TABLE,
 } from '@shared/constants';
 import { pathCommandsToSvgString } from '@shared/gradingEngine';
+import {
+  PATTERN_DEFINITIONS,
+  getPatternDefinition,
+  validatePatternMeasurements,
+} from '@shared/patternCatalog';
 import { MensShirtMasterModal } from './MensShirtMasterModal';
 import { MensTrouserMasterModal } from './MensTrouserMasterModal';
 import {
@@ -39,6 +44,7 @@ import {
   HelpCircle,
   Clock,
   Sparkles,
+  AlertCircle,
   ArrowRight,
   ArrowLeft,
   Check,
@@ -118,6 +124,8 @@ export const EasyPatternStudio: React.FC = () => {
     setIsWorkflowModalOpen,
     loadGarmentTemplate,
     setTukacadWorkflowStep,
+    setActiveModal,
+    generatePatternFromWorkflow,
   } = useCADStore();
 
   // ==========================================
@@ -461,7 +469,7 @@ export const EasyPatternStudio: React.FC = () => {
   const [measurePoint1, setMeasurePoint1] = useState<{ x: number; y: number; name: string } | null>(null);
   const [measurePoint2, setMeasurePoint2] = useState<{ x: number; y: number; name: string } | null>(null);
 
-  // Step 2 manual measurements
+  // Step 2 manual measurements (legacy compatibility)
   const [measurements, setMeasurements] = useState({
     bust: 92.0,
     waist: 71.0,
@@ -470,6 +478,12 @@ export const EasyPatternStudio: React.FC = () => {
     shoulderWidth: 12.8,
     armhole: 22.0,
   });
+
+  // Step 2 Pattern-Specific Workflow State
+  const [step2PatternId, setStep2PatternId] = useState<string>('basic-bodice');
+  const [step2Measurements, setStep2Measurements] = useState<Record<string, string>>({});
+  const [step2Errors, setStep2Errors] = useState<Record<string, string>>({});
+  const [step2GeneralError, setStep2GeneralError] = useState<string | null>(null);
 
   // Step 6 visible nested sizes
   const [visibleNestedSizes, setVisibleNestedSizes] = useState<Record<GarmentSize, boolean>>({
@@ -491,12 +505,57 @@ export const EasyPatternStudio: React.FC = () => {
   });
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  // Load Basic Bodice if not loaded
+  // Load Basic Bodice ONLY if no garment exists at all (never overwrite user pattern)
   const ensureBasicBodice = () => {
-    if (garment.name !== 'Basic Bodice') {
+    if (!garment) {
       const bodice = createBasicBodice();
       setGarment(bodice);
     }
+  };
+
+  // Step 2 Pattern Selection & Measurement Handlers
+  const handleStep2SelectPattern = (id: string) => {
+    setStep2PatternId(id);
+    setStep2Measurements({}); // Clear previous pattern measurements (Req 13)
+    setStep2Errors({});
+    setStep2GeneralError(null);
+  };
+
+  const handleStep2OkSubmit = () => {
+    const patDef = getPatternDefinition(step2PatternId);
+    if (!patDef) {
+      setStep2GeneralError('Please select a pattern.');
+      return;
+    }
+
+    const numericValues: Record<string, number | undefined> = {};
+    for (const field of patDef.measurements) {
+      const raw = step2Measurements[field.key]?.trim();
+      if (raw !== undefined && raw !== '') {
+        const num = parseFloat(raw);
+        numericValues[field.key] = isNaN(num) ? undefined : num;
+      } else {
+        numericValues[field.key] = undefined;
+      }
+    }
+
+    const validation = validatePatternMeasurements(step2PatternId, numericValues);
+    if (!validation.valid) {
+      setStep2Errors(validation.errors);
+      setStep2GeneralError(
+        `Please enter all required measurements for ${patDef.name}. Missing or invalid: ${validation.missingFields.join(', ')}.`
+      );
+      return;
+    }
+
+    const sanitized: Record<string, number> = {};
+    for (const [k, v] of Object.entries(numericValues)) {
+      if (v !== undefined) sanitized[k] = v;
+    }
+
+    generatePatternFromWorkflow(step2PatternId, sanitized, 'cm');
+    setEasyPatternStep(3);
+    showToast(`Generated ${patDef.name} using entered measurements!`);
   };
 
   // Compile custom product from scratch
@@ -2081,7 +2140,7 @@ export const EasyPatternStudio: React.FC = () => {
       {/* 1. TOP NAVBAR: Brand + 8 Steps Stepper + Sizing Switcher       */}
       {/* ============================================================== */}
       <header className="h-16 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0 shadow-xs z-30">
-        {/* Left Brand Badge */}
+        {/* Left Brand Badge + New File Button */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-cyan-500/20 tracking-tighter">
@@ -2101,6 +2160,15 @@ export const EasyPatternStudio: React.FC = () => {
               </p>
             </div>
           </div>
+
+          <button
+            onClick={() => setActiveModal('new')}
+            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20"
+            title="New File (Pattern Generation Workflow)"
+          >
+            <FolderPlus className="w-3.5 h-3.5 text-blue-100" />
+            <span>New File</span>
+          </button>
         </div>
 
         {/* Center: 8-Step Interactive Progress Stepper */}
@@ -2113,7 +2181,6 @@ export const EasyPatternStudio: React.FC = () => {
                 key={s.step}
                 onClick={() => {
                   setEasyPatternStep(s.step);
-                  ensureBasicBodice();
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   isActive
@@ -2233,6 +2300,14 @@ export const EasyPatternStudio: React.FC = () => {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   EasyPattern Navigation
                 </div>
+                <button
+                  onClick={() => setActiveModal('new')}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 hover:from-blue-500 hover:to-indigo-500"
+                  title="New File: Select Pattern -> Enter Measurements -> OK -> Generate Pattern"
+                >
+                  <FolderPlus className="w-4 h-4 text-blue-200" />
+                  <span>New File (Workflow)</span>
+                </button>
                 <button
                   onClick={() => setStep1Tab('create-studio')}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all ${
@@ -5003,7 +5078,6 @@ export const EasyPatternStudio: React.FC = () => {
                             </div>
                             <button
                               onClick={() => {
-                                ensureBasicBodice();
                                 setEasyPatternStep(3);
                                 showToast(`Loaded "${proj.title}"!`);
                               }}
@@ -5125,200 +5199,154 @@ export const EasyPatternStudio: React.FC = () => {
         )}
 
         {/* ============================================================== */}
-        {/* STEP 2: SELECT GARMENT & SIZE RANGE                            */}
+        {/* STEP 2: SELECT PATTERN & ENTER MEASUREMENTS (EXACT WORKFLOW)   */}
         {/* ============================================================== */}
-        {easyPatternStep === 2 && (
-          <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden animate-fadeIn">
-              {/* Header */}
-              <div className="p-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-blue-200">
-                    Step 2 of 8
-                  </span>
-                  <h2 className="text-lg font-bold">New Project: Garment & Size Range</h2>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-mono text-xs font-bold">
-                  Women · Basic Bodice
-                </span>
-              </div>
-
-              {/* Form Content */}
-              <div className="p-6 space-y-5 text-xs">
-                {/* 1. Category Selection */}
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
-                    1. Select Garment Category
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(['Women', 'Men', 'Children', 'Custom'] as const).map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setGarmentCategory(cat)}
-                        className={`py-2 px-3 rounded-lg font-bold text-xs transition-all ${
-                          garmentCategory === cat
-                            ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Garment Type Dropdown */}
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
-                    2. Garment Type
-                  </label>
-                  <select
-                    value={garmentType}
-                    onChange={(e) => setGarmentType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="Basic Bodice">Basic Bodice (Front & Back with Darts - Recommended)</option>
-                    <option value="Trouser">Trouser / Pants Sloper</option>
-                    <option value="Flared Skirt">Flared Skirt</option>
-                    <option value="Shirt">Casual Button-Up Shirt</option>
-                    <option value="Sheath Dress">Princess Sheath Dress</option>
-                  </select>
-                </div>
-
-                {/* 3. Size Range Multi-Select Buttons */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                      3. Target Size Range
-                    </label>
-                    <span className="text-[10px] text-slate-500">
-                      {selectedSizeRange.length} sizes selected
+        {easyPatternStep === 2 && (() => {
+          const activePatDef = getPatternDefinition(step2PatternId) || PATTERN_DEFINITIONS[0];
+          return (
+            <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 overflow-y-auto">
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl overflow-hidden animate-fadeIn">
+                {/* Header */}
+                <div className="p-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-blue-200">
+                      Step 2: Pattern Generation Workflow
                     </span>
+                    <h2 className="text-lg font-bold">Select Pattern & Enter Measurements</h2>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {(['XS', 'S', 'M', 'L', 'XL', 'XXL'] as GarmentSize[]).map((sz) => {
-                      const isSelected = selectedSizeRange.includes(sz);
-                      const colorInfo = SIZE_COLOR_PALETTE[sz];
-                      return (
-                        <button
-                          key={sz}
-                          onClick={() => toggleSizeInRange(sz)}
-                          className={`flex-1 py-2.5 rounded-xl font-black text-xs transition-all flex flex-col items-center gap-1 ${
-                            isSelected
-                              ? 'bg-blue-50 text-blue-900 border-2 border-blue-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <span>{sz}</span>
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: colorInfo.hex }}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-mono text-xs font-bold">
+                    {activePatDef.name} ({activePatDef.piecesCount} Pcs)
+                  </span>
                 </div>
 
-                {/* 4. Measurement Input Option */}
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
-                    4. Measurement Input Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <label className={`p-3 rounded-xl border cursor-pointer flex items-center gap-2.5 transition-all ${
-                      measurementInputMode === 'manual'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-900'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="meas-mode"
-                        checked={measurementInputMode === 'manual'}
-                        onChange={() => setMeasurementInputMode('manual')}
-                        className="text-blue-600 focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="font-bold">Manual Input</div>
-                        <div className="text-[10px] text-slate-500">Enter custom body measurements</div>
-                      </div>
-                    </label>
+                {/* General Error Banner */}
+                {step2GeneralError && (
+                  <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 font-medium">{step2GeneralError}</div>
+                  </div>
+                )}
 
-                    <label className={`p-3 rounded-xl border cursor-pointer flex items-center gap-2.5 transition-all ${
-                      measurementInputMode === 'sizechart'
-                        ? 'border-blue-600 bg-blue-50/50 text-blue-900'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="meas-mode"
-                        checked={measurementInputMode === 'sizechart'}
-                        onChange={() => setMeasurementInputMode('sizechart')}
-                        className="text-blue-600 focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="font-bold">Use Size Chart</div>
-                        <div className="text-[10px] text-slate-500">Industry standard specs</div>
-                      </div>
+                {/* Form Content */}
+                <div className="p-6 space-y-5 text-xs">
+                  {/* 1. Select Exactly One Pattern */}
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
+                      1. Select Pattern (Exactly One)
                     </label>
+                    <select
+                      value={step2PatternId}
+                      onChange={(e) => handleStep2SelectPattern(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    >
+                      {PATTERN_DEFINITIONS.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.piecesCount} Pcs - {p.category})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      {activePatDef.description}
+                    </p>
                   </div>
 
-                  {/* Manual Inputs Preview */}
-                  <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Bust (cm)</span>
-                      <input
-                        type="number"
-                        value={measurements.bust}
-                        onChange={(e) => setMeasurements({ ...measurements, bust: Number(e.target.value) })}
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-xs mt-0.5"
-                      />
+                  {/* 2. Pattern-Specific Measurements */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                        <Ruler className="w-3.5 h-3.5 text-blue-600" />
+                        <span>2. Required Measurements for {activePatDef.name} (cm)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaults: Record<string, string> = {};
+                          activePatDef.measurements.forEach((m) => {
+                            defaults[m.key] = String(m.defaultValue || '');
+                          });
+                          setStep2Measurements(defaults);
+                          setStep2Errors({});
+                          setStep2GeneralError(null);
+                        }}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer"
+                      >
+                        Fill Standard Specs
+                      </button>
                     </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Waist (cm)</span>
-                      <input
-                        type="number"
-                        value={measurements.waist}
-                        onChange={(e) => setMeasurements({ ...measurements, waist: Number(e.target.value) })}
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-xs mt-0.5"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Hip (cm)</span>
-                      <input
-                        type="number"
-                        value={measurements.hip}
-                        onChange={(e) => setMeasurements({ ...measurements, hip: Number(e.target.value) })}
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-xs mt-0.5"
-                      />
+
+                    <p className="text-[10px] text-slate-500 mb-2">
+                      Only measurements required for this pattern are displayed. All fields marked with * are required.
+                    </p>
+
+                    {/* Inputs Grid */}
+                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-60 overflow-y-auto">
+                      {activePatDef.measurements.map((field) => {
+                        const val = step2Measurements[field.key] || '';
+                        const hasErr = Boolean(step2Errors[field.key]);
+                        return (
+                          <div key={field.key} className="space-y-0.5">
+                            <span className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-0.5">
+                              <span>{field.label} ({field.unit})</span>
+                              <span className="text-red-500 font-bold">*</span>
+                            </span>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={val}
+                              onChange={(e) => {
+                                setStep2Measurements((prev) => ({ ...prev, [field.key]: e.target.value }));
+                                if (step2Errors[field.key]) {
+                                  setStep2Errors((prev) => {
+                                    const next = { ...prev };
+                                    delete next[field.key];
+                                    return next;
+                                  });
+                                }
+                                if (step2GeneralError) setStep2GeneralError(null);
+                              }}
+                              placeholder={field.placeholder || `e.g. ${field.defaultValue || ''}`}
+                              className={`w-full bg-white border rounded px-2 py-1 font-mono font-bold text-xs ${
+                                hasErr
+                                  ? 'border-red-500 focus:ring-1 focus:ring-red-400'
+                                  : 'border-slate-300 focus:ring-1 focus:ring-blue-500'
+                              }`}
+                            />
+                            {hasErr && (
+                              <span className="text-[9px] text-red-600 font-semibold block">
+                                {step2Errors[field.key]}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
 
-                {/* Submit & Next Button */}
-                <div className="pt-2 flex items-center justify-between">
-                  <button
-                    onClick={() => setEasyPatternStep(1)}
-                    className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-bold text-xs flex items-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      ensureBasicBodice();
-                      setEasyPatternStep(3);
-                    }}
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-blue-600/30 transition-all"
-                  >
-                    <span>Next: Draft the Pattern</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {/* Submit Button: OK */}
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setEasyPatternStep(1)}
+                      className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-bold text-xs flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back</span>
+                    </button>
+                    {/* Requirement 7, 8, 9, 10: "Click OK" -> validate -> generate ONLY selected pattern */}
+                    <button
+                      type="button"
+                      onClick={handleStep2OkSubmit}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs flex items-center gap-2 shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Sparkles className="w-4 h-4 fill-white text-blue-200" />
+                      <span>OK</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ============================================================== */}
         {/* STEPS 3 TO 7: INTERACTIVE PATTERN WORKSPACE & CANVAS          */}
@@ -7234,7 +7262,6 @@ export const EasyPatternStudio: React.FC = () => {
                   </div>
                   <button
                     onClick={() => {
-                      ensureBasicBodice();
                       setActiveSubModal(null);
                       setEasyPatternStep(3);
                       showToast(`Resumed draft: ${rec.name}`);

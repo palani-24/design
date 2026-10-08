@@ -45,6 +45,7 @@ import {
   generateBlankGarmentFromInput,
 } from '@shared/constants';
 import { calculateDistance, gradeGarment } from '@shared/gradingEngine';
+import { generatePatternFromMeasurements } from '@shared/patternCatalog';
 
 
 
@@ -257,6 +258,7 @@ interface CADState {
       | 'bomber-jacket'
   ) => void;
   createCustomGarment: (input: CustomGarmentInput) => void;
+  generatePatternFromWorkflow: (patternId: string, measurements: Record<string, number>, unit?: CADUnit) => void;
   updateGarmentInfo: (updates: { name?: string; category?: any; baseSize?: GarmentSize }) => void;
   addComponentToGarment: (component: PatternComponent) => void;
   updateComponent: (id: string, updates: Partial<PatternComponent>) => void;
@@ -807,6 +809,31 @@ export const useCADStore = create<CADState>((set, get) => ({
       gradingNotification: `Created custom garment: ${newGarment.name}`,
     });
     setTimeout(() => set({ gradingNotification: null }), 3000);
+  },
+
+  generatePatternFromWorkflow: (patternId, measurements, unit = 'cm') => {
+    const { history, garment, currentProject } = get();
+    const newGarment = generatePatternFromMeasurements(patternId, measurements, unit);
+    set({
+      garment: newGarment,
+      currentSize: newGarment.currentSize,
+      targetSize: newGarment.currentSize === 'S' ? 'M' : 'L',
+      selectedComponentId: 'entire',
+      currentProject: {
+        ...currentProject,
+        id: `proj-${patternId}-${Date.now()}`,
+        title: `${newGarment.name}`,
+        garment: newGarment,
+        updatedAt: new Date().toISOString(),
+      },
+      easyPatternStep: 3, // Transition to Step 3 drafting canvas in EasyPatternStudio
+      history: [...history.slice(-25), garment],
+      future: [],
+      lastGradingResult: null,
+      activeModal: 'none',
+      gradingNotification: `Generated ${newGarment.name} using entered measurements!`,
+    });
+    setTimeout(() => set({ gradingNotification: null }), 3500);
   },
 
   updateGarmentInfo: (updates) => {

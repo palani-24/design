@@ -73,7 +73,7 @@ export const TukaMenuBar: React.FC = () => {
     {
       name: 'File',
       items: [
-        { label: 'New Project (Ctrl+N)', action: () => setActiveModal('new') },
+        { label: 'New File (Ctrl+N)', action: () => setActiveModal('new') },
         { label: 'Open Pattern File (Ctrl+O)', action: () => setActiveModal('open') },
         { label: 'Save Pattern (Ctrl+S)', action: () => setActiveModal('save') },
         { divider: true },
@@ -372,7 +372,7 @@ export const TukaMenuBar: React.FC = () => {
           <div className="flex items-center bg-zinc-800/80 rounded border border-zinc-700 p-0.5 mr-1">
             <button
               onClick={() => setActiveModal('new')}
-              title="New Project"
+              title="New File"
               className="p-1 hover:bg-zinc-700 rounded text-zinc-300 hover:text-white"
             >
               <FilePlus className="w-3.5 h-3.5" />

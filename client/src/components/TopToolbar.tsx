@@ -116,7 +116,7 @@ export const TopToolbar: React.FC = () => {
           <div className="flex items-center bg-slate-800/80 rounded border border-slate-700/60 p-0.5">
             <button
               onClick={() => setActiveModal('new')}
-              title="New Project"
+              title="New File"
               id="toolbar-new-btn"
               className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition-colors"
             >

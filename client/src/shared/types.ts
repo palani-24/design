@@ -80,6 +80,7 @@ export interface PatternComponent {
     hemWidth?: number;
     shoulderLength?: number;
     shoulderWidth?: number;
+    [key: string]: number | undefined;
   };
   offset: Point2D; // Relative layout offset inside garment workspace
 
@@ -95,6 +96,7 @@ export interface Garment {
   position: Point2D; // Moving Entire Garment moves Front + Back + Sleeve together
   components: PatternComponent[];
   sizeTable: SizeTable;
+  measurements?: Record<string, number>;
   lastGradedAt?: string;
   gradeHistory?: Array<{
     from: GarmentSize;

@@ -76,11 +76,11 @@ export const LeftPanel: React.FC = () => {
           <button
             onClick={() => setActiveModal('new')}
             id="left-new-garment-btn"
-            title="New Project from Templates"
+            title="New File (Pattern Generation Workflow)"
             className="text-[10.5px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded flex items-center gap-1 transition-colors shadow-2xs"
           >
             <Plus className="w-3 h-3" />
-            New
+            New File
           </button>
         </div>
       </div>
